@@ -31,27 +31,29 @@ being called with a large delta time (for example if your app is not in the fore
 behaviour is called tunneling, if you want to read more about it.
 
 ## Mixins
-### Hitbox
-The `Hitbox` mixin is mainly used for two things; to make detection of collisions with other
+### HasHitboxes
+The `HasHitboxes` mixin is mainly used for two things; to make detection of collisions with other
 hitboxes and to more accurately recognize gestures on top of your `PositionComponent`s. Say that you
 have a fairly round rock as a `SpriteComponent` for example, then you don't want to register input
 that is in the corner of the image where the rock is not displayed, since an image is always
-rectangular. Then you can use the `Hitbox` mixin to define a more accurate polygon (or another
+rectangular. Then you can use the `HasHitboxes` mixin to define a more accurate polygon (or another
 shape) for which the input should be within for the event to be registered on your component.
 
-You can add new shapes to the `Hitbox` just like they are added in the below `Collidable` example.
+You can add new shapes to the `HasHitboxes` just like they are added in the below `Collidable`
+example.
 
 ### Collidable
-The `Collidable` mixin is added to a `PositionComponent` that has a `HitBox` and it is used for
-detecting collisions with other `Collidable`s. If you do not add a shape to your `Hitbox` component
-it will never collide with anything. If you want the component to have a default rectangular shape
-that fills the size of your component you can simply do `addShape(HitboxRectangle())`.
+The `Collidable` mixin is added to a `PositionComponent` that has a `HasHitboxes` and it is used for
+detecting collisions with other `Collidable`s. If you do not add a shape to your `HasHitboxes` 
+component it will never collide with anything. If you want the component to have a default 
+rectangular shape that fills the size of your component you can simply do 
+`addHitbox(HitboxRectangle())`.
 
 To make your component collidable you would start off something like this:
 
 ```dart
-class MyCollidable extends PositionComponent with Hitbox, Collidable {
-  MyCollidable (
+class MyCollidable extends PositionComponent with HasHitboxes, Collidable {
+  MyCollidable() {
     // This could also be done in onLoad instead of in the constructor
     final shape = HitboxPolygon([
       Vector2(0, 1),
@@ -59,7 +61,7 @@ class MyCollidable extends PositionComponent with Hitbox, Collidable {
       Vector2(0, -1),
       Vector2(-1, 0),
     ]);
-    addShape(shape);
+    addHitbox(shape);
   }
 }
 ```
@@ -75,11 +77,20 @@ To react to a collision you should override the `collisionCallback` in your comp
 Example:
 
 ```dart
-class MyCollidable extends PositionComponent with Hitbox, Collidable {
+class MyCollidable extends PositionComponent with HasHitboxes, Collidable {
   ...
 
   @override
   void onCollision(Set<Vector2> points, Collidable other) {
+    if (other is CollidableScreen) {
+      ...
+    } else if (other is YourOtherCollidable) {
+      ...
+    }
+  }
+
+  @override
+  void onCollisionEnd(Collidable other) {
     if (other is CollidableScreen) {
       ...
     } else if (other is YourOtherCollidable) {
@@ -93,7 +104,8 @@ In this example it can be seen how the Dart `is` keyword is used to check which 
 that your component collided with. The set of points is where the edges of the hitboxes collided.
 Note that the `onCollision` method will be called on both collidable components if they
 have both implemented the `onCollision` method, and also on both shapes if they have that method
-implemented.
+implemented. The same goes for the `onCollisionEnd` method, which is called when two components or
+shapes that were previously colliding no longer colliding with each other.
 
 If you want to check collisions with the screen edges, as we do in the example above, you can use
 the predefined [ScreenCollidable](#ScreenCollidable) class and since that one also is a `Collidable`
@@ -119,8 +131,8 @@ This could be used for example if you have components outside of the screen that
 about at the moment but that might later come back in to view so they are not completely removed
 from the game.
 
-These are just examples of how you could use these types, there will be a lot more usecases for them
-so don't doubt to use them even if your use-case isn't listed here.
+These are just examples of how you could use these types, there will be a lot more use cases for
+them so don't doubt to use them even if your use case isn't listed here.
 
 ### HasCollidables
 If you want to use this collision detection in your game you have to add the `HasCollidables` mixin
@@ -128,8 +140,8 @@ to your game so that the game knows that it should keep track of which component
 
 Example:
 ```dart
-class MyGame extends BaseGame with HasCollidables {
-  ...
+class MyGame extends FlameGame with HasCollidables {
+  // ...
 }
 ```
 
@@ -155,11 +167,11 @@ There are currently three shapes: [Polygon](#Polygon), [Rectangle](#Rectangle) a
 [Cirlce](#Circle).
 
 ### HitboxShape
-A HitboxShape is a Shape defined from the center position of the component that it is attached to
-and it has the same bounding size and angle as the component. You can set `localPosition` to have
-the position of the shape deviate from the center of the component. A HitboxShape is the type of
-shape that you add to your Hitbox, or Collidable. Usually these types of shapes are the only ones
-that you need to use.
+A `HitboxShape` is a `Shape` defined from the center position of the component that it is attached
+to and it has the same bounding size and angle as the component. You can set `localPosition` to have
+the position of the shape deviate from the center of the component. A `HitboxShape` is the type of
+shape that you add to your `HasHitboxes`, or `Collidable`. Usually these types of shapes are the
+only ones that you need to use.
 
 #### HitboxPolygon
 It should be noted that if you want to use collision detection or `containsPoint` on the `Polygon`,
@@ -202,7 +214,7 @@ A `HitboxRectangle` is really just a simplified Polygon, but it can be defined m
 To create rectangle you add a `relation` in the constructor which defines the relationship between
 the length of the horizontal and vertical side and the size of the bounding box. To create a
 `HitboxRectangle` that has half of the width and the full height of the bounding box (`size`)) you
-do this: `HitboxRectangle(definition: Vector2(0.5, 1.0));`.
+do this: `HitboxRectangle(relation: Vector2(0.5, 1.0));`.
 
 Once you have added the `HitboxRectangle` to a collidable component it will be sized and positioned
 in relation to that component. So if the size of your component is `Vector2(400, 200)` and the
@@ -240,5 +252,8 @@ If you know how long your circle's position and/or how long the radius is going 
 you can use the optional arguments `radius` and `position` to set those, if the `radius` is set the
 `size` of the `Circle` will be automatically set too.
 
-## Example
-https://github.com/flame-engine/flame/tree/main/examples/lib/stories/collidables
+## Examples
+https://examples.flame-engine.org/#/Collision%20Detection_Circles
+https://examples.flame-engine.org/#/Collision%20Detection_Multiple%20shapes
+https://examples.flame-engine.org/#/Collision%20Detection_Shapes%20without%20components
+https://github.com/flame-engine/flame/tree/main/examples/lib/stories/collision_detection

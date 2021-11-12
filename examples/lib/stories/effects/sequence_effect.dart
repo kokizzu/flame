@@ -1,39 +1,32 @@
 import 'package:flame/effects.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
-import 'package:flame/gestures.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 
 import '../../commons/square_component.dart';
 
 final green = Paint()..color = const Color(0xAA338833);
 
-class SequenceEffectGame extends BaseGame with TapDetector {
+class SequenceEffectGame extends FlameGame with TapDetector {
   late SquareComponent greenSquare;
 
   @override
   Future<void> onLoad() async {
-    greenSquare = SquareComponent()
-      ..paint = green
-      ..position.setValues(100, 100);
+    await super.onLoad();
+    greenSquare = SquareComponent(position: Vector2.all(100), paint: green);
     add(greenSquare);
   }
 
   @override
-  void onTapUp(TapUpInfo event) {
-    final currentTap = event.eventPosition.game;
+  void onTapUp(TapUpInfo info) {
+    final currentTap = info.eventPosition.game;
     greenSquare.clearEffects();
 
-    final move1 = MoveEffect(
-      path: [currentTap],
-      speed: 250.0,
-      curve: Curves.bounceInOut,
-      isAlternating: true,
-    );
-
-    final move2 = MoveEffect(
+    final move = MoveEffect(
       path: [
-        currentTap + Vector2(0, 50),
+        currentTap,
+        currentTap + Vector2(-20, 50),
         currentTap + Vector2(-50, -50),
         currentTap + Vector2(50, 0),
       ],
@@ -41,8 +34,8 @@ class SequenceEffectGame extends BaseGame with TapDetector {
       curve: Curves.easeIn,
     );
 
-    final scale = ScaleEffect(
-      size: currentTap,
+    final size = SizeEffect(
+      size: currentTap - greenSquare.position,
       speed: 100.0,
       curve: Curves.easeInCubic,
     );
@@ -53,17 +46,11 @@ class SequenceEffectGame extends BaseGame with TapDetector {
       curve: Curves.decelerate,
     );
 
-    final combination = CombinedEffect(
-      effects: [move2, rotate],
-      isAlternating: true,
-      onComplete: () => print('combination complete'),
-    );
-
     final sequence = SequenceEffect(
-      effects: [move1, scale, combination],
+      effects: [size, rotate, move],
       isAlternating: true,
     );
     sequence.onComplete = () => print('sequence complete');
-    greenSquare.addEffect(sequence);
+    greenSquare.add(sequence);
   }
 }

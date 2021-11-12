@@ -3,15 +3,14 @@ import 'dart:ui';
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 
+import '../../components.dart';
 import '../extensions/vector2.dart';
-import '../text_config.dart';
+import '../text.dart';
 import 'position_component.dart';
 
-class TextComponent extends PositionComponent {
+class TextComponent<T extends TextRenderer> extends PositionComponent {
   String _text;
-  TextConfig _config;
-
-  late TextPainter _tp;
+  T _textRenderer;
 
   String get text => _text;
 
@@ -22,32 +21,42 @@ class TextComponent extends PositionComponent {
     }
   }
 
-  TextConfig get config => _config;
+  T get textRenderer => _textRenderer;
 
-  set config(TextConfig config) {
-    _config = config;
+  set textRenderer(T textRenderer) {
+    _textRenderer = textRenderer;
     _updateBox();
   }
 
   TextComponent(
     this._text, {
-    TextConfig? config,
+    T? textRenderer,
     Vector2? position,
     Vector2? size,
-  })  : _config = config ?? TextConfig(),
-        super(position: position, size: size) {
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
+  })  : _textRenderer = textRenderer ?? TextRenderer.createDefault<T>(),
+        super(
+          position: position,
+          size: size,
+          scale: scale,
+          angle: angle,
+          anchor: anchor,
+          priority: priority,
+        ) {
     _updateBox();
   }
 
   void _updateBox() {
-    _tp = config.toTextPainter(_text);
-    size.setValues(_tp.width, _tp.height);
+    final expectedSize = textRenderer.measureText(_text);
+    size.setValues(expectedSize.x, expectedSize.y);
   }
 
   @mustCallSuper
   @override
-  void render(Canvas c) {
-    super.render(c);
-    _tp.paint(c, Offset.zero);
+  void render(Canvas canvas) {
+    _textRenderer.render(canvas, text, Vector2.zero());
   }
 }

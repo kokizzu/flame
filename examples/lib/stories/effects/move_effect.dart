@@ -1,35 +1,39 @@
+import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
-import 'package:flame/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:flame/input.dart';
 
 import '../../commons/square_component.dart';
 
-class MoveEffectGame extends BaseGame with TapDetector {
+class MoveEffectGame extends FlameGame with TapDetector {
   late SquareComponent square;
+
+  final List<Vector2> path = [
+    Vector2(100, 100),
+    Vector2(50, 120),
+    Vector2(200, 400),
+    Vector2(150, 150),
+    Vector2(100, 300),
+  ];
 
   @override
   Future<void> onLoad() async {
-    square = SquareComponent()..position.setValues(100, 100);
+    await super.onLoad();
+    square = SquareComponent(size: 50, position: Vector2(200, 150));
     add(square);
+    final pathMarkers = path.map((p) => CircleComponent(3, position: p));
+    addAll(pathMarkers);
   }
 
   @override
-  void onTapUp(TapUpInfo event) {
-    square.addEffect(
+  void onTapUp(TapUpInfo info) {
+    square.add(
       MoveEffect(
-        path: [
-          event.eventPosition.game,
-          Vector2(100, 100),
-          Vector2(50, 120),
-          Vector2(200, 400),
-          Vector2(150, 0),
-          Vector2(100, 300),
-        ],
+        path: [info.eventPosition.game] + path,
         speed: 250.0,
-        curve: Curves.bounceInOut,
         isAlternating: true,
+        peakDelay: 2.0,
       ),
     );
   }

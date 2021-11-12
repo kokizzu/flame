@@ -1,12 +1,186 @@
 # CHANGELOG
 
 ## [next]
+ - Added `StandardEffectController` class
+ - Refactored `Effect` class to use `EffectController`, added `Transform2DEffect` class
+ - Clarified `TimerComponent` example
+ - Fixed pause and resume engines when `GameWidget` had rebuilds
+ - Removed `runOnCreation` attribute in favor of the `paused` attribute on `FlameGame`
+ - Add `CustomPainterComponent`
+ - Alternative implementation of `RotateEffect`, based on `Transform2DEffect`
+ - Alternative implementation of `MoveEffect`, based on `Transform2DEffect`
+ - Fix `onGameResize` margin bug in `HudMarginComponent`
+ - `PositionComponent.size` now returns a `NotifyingVector2`
+ - Possibility to manually remove `TimerComponent`
+ - Rename `Hitbox` mixin to `HasHitboxes`
+ - Added `RemoveEffect` and `SimpleEffectController`
+ - Create default implementations of `RectangleComponent`, `CircleComponent` and `PolygonComponent`
+ - Streamlined the argument list for all components extending `PositionComponent`
+ - Improved interaction between viewport and isHud components
+ - `randomColor` method in the `Color` extension
+ - Calling super-method in `.render()` is now optional
+ - Components that manipulate canvas state are now responsible for saving/restoring that state
+ - Remove `super.render` calls that are no longer needed
+ - Fixed typo in error message
+
+## [1.0.0-releasecandidate.16]
+ - `changePriority` no longer breaks game loop iteration
+ - Move component mixin checks to their own files
+ - Fix exception when game was rebuilt
+ - Add `@mustCallSuper` on `Component.render`
+ - Add `SpriteSheet.createAnimationVariable` method to allow animations with different `stepTime` for each sprite
+ - Use the full delta in `JoystickComponent` so that it can't go to the wrong direction on the wrong side
+ - Improved the menu for documentation version selection
+ - Introduce `onDoubleTapDown` with info and `onDoubleTapCancel`
+ - Changed `onHoverEnter` and `onHoverLeave` to return `bool` (breaking change)
+ - Improved "move effect" example in the Dashbook
+ - Use documentation versions generated from flame-docs-site
+
+## [1.0.0-releasecandidate.15]
+ - Fix issue with `Draggable`s not being removed from `draggables` list
+ - Increase Flutter SDK constraint to `>= 2.5.0`.
+ - Method `PositionComponent.toRect()` now works for flipped/rotated components.
+ - Make the root bundle exposed via `Flame.bundle` actually configurable
+ - Take in an optional `Camera` as a parameter to `FlameGame`
+ - Make super.onLoad mandatory to avoid memory leaks
+ - `QueryableOrderedSet`'s `strictMode` is configurable so it is no longer necessary to call `register` before `query`
+ - Add option to rotate `SpriteWidget`
+ - Fix bug where `onRemove` was called during resizing
+ - Add `onAttach` and `onDetach` to `Game`
+
+## [1.0.0-releasecandidate.14]
+ - Reset effects after they are done so that they can be repeated
+ - Remove integrated joystick buttons
+ - Add `MarginHudComponent`, used when components need to have a margin to the viewport edge
+ - Refactor `JoystickComponent`
+ - Add `SpriteAnimationWidget.asset`
+ - Add `SpriteWidget.asset`
+ - Add `SpriteButton.asset`
+ - Add `NineTileBox.asset`
+ - Fix resolution of `TextBoxComponent`
+ - Add `BaseGame.remove` and `BaseGame.removeAll` helpers for removing components
+ - Add `BaseComponent.remove` and `BaseComponent.removeAll` helpers for removing children
+ - Rename `Camera.cameraSpeed` to `Camera.speed`
+ - Rename `addShape` to `addHitbox` in `Hitbox` mixin
+ - Fix bug with Events and Draggables
+ - Add generics to components with HasGameRef so that they can be extended and have another gameRef
+ - Fix parallax fullscreen bug when game is resized
+ - Generalize `paint` usage on components
+ - Create `OpacityEffect`
+ - Create `ColorEffect`
+ - Adding ability to pause `SpriteAnimationComponent`
+ - Adding `SpriteGroupComponent`
+ - Fix truncated last frame in non-looping animations
+ - Default size of `SpriteComponent` is `srcSize` instead of spritesheet size
+ - Export test helper methods
+ - Rename `ScaleEffect` to `SizeEffect`
+ - Introduce `scale` on `PositionComponent`
+ - Add `ScaleEffect` that works on `scale` instead of `size`
+ - Add class `NotifyingVector2`
+ - Add class `Transform2D`
+ - Added helper functions `testRandom()` and `testWidgetsRandom()`
+ - Remove `FPSCounter` from `BaseGame`
+ - Refactor `PositionComponent` to work with `Transform2D`: the component now works more reliably
+   when nested
+ - Properties `renderFlipX`, `renderFlipY` removed and replaced with methods
+   `flipHorizontally()` and `flipVertically()`.
+ - Method `.angleTo` removed as it was not working properly.
+ - In debug mode `PositionComponent` now displays an indicator for the anchor position.
+ - Update `Camera` docs to showcase usage with `Game` class
+ - Fixed a bug with `worldBounds` being set to `null` in `Camera`
+ - Remove `.viewport` from `BaseGame`, use `camera.viewport` instead
+ - `MockCanvas` is now strongly typed and matches numeric coordinates up to a tolerance
+ - Add `loadAllImages` to `Images`, which loads all images from the prefixed path
+ - Reviewed the keyboard API with new mixins (`KeyboardHandler` and `HasKeyboardHandlerComponents`)
+ - Added `FocusNode` on the game widget and improved keyboard handling in the game.
+ - Added ability to have custom mouse cursor on the `GameWidget` region
+ - Change sprite component to default to the Sprite size if not provided
+ - `TextBoxComponent` waits for cache to be filled on `onLoad`
+ - `TextBoxComponent` can have customizable `pixelRatio`
+ - Add `ContainsAtLeastMockCanvas` to facilitate testing with `MockCanvas`
+ - Support for `drawImage` for `MockCanvas`
+ - `Game` is now a `Component`
+ - `ComponentEffect` is now a `Component`
+ - `HasGameRef` can now operate independently from `Game`
+ - `initialDelay` and `peakDelay` for effects to handle time before and after an effect
+ - `component.onMount` now runs every time a component gets a new parent
+ - Add collision detection between child components
+
+## [1.0.0-releasecandidate.13]
+ - Fix camera not ending up in the correct position on long jumps
+ - Make the `JoystickPlayer` a `PositionComponent`
+ - Extract shared logic when handling components set in BaseComponent and BaseGame to ComponentSet.
+ - Rename `camera.shake(amount: x)` to `camera.shake(duration: x)`
+ - Fix `SpriteAnimationComponent` docs to use `Future.wait`
+ - Add an empty `postRender` method that will run after each components render method
+ - Rename `Tapable` to `Tappable`
+ - Fix `SpriteAnimationComponent` docs to use `Future.wait`
+ - Add an empty `postRender` method that will run after each components render method
+ - Rename `HasTapableComponents` to `HasTappableComponents`
+ - Rename `prepareCanvas` to `preRender`
+ - Add `intensity` to `Camera.shake`
+ - `FixedResolutionViewport` to use matrix transformations for `Canvas`
+
+## [1.0.0-releasecandidate.12]
+ - Fix link to code in example stories
+ - Fix RotateEffect with negative deltas
+ - Add isDragged to Draggable
+ - Fix anchor of rendered text in TextComponent
+ - Add new extensions to handle math.Rectangles nicely
+ - Implement color parsing methods
+ - Migrated the `Particle` API to `Vector2`
+ - Add copyWith function to TextRenderer
+ - Fix debug mode is not propagated to children of non-Position components
+ - Fix size property of TextComponent was not correctly set
+ - Fix anchor property was being incorrectly passed along to text renderer
+ - All components take priority as an argument on their constructors
+ - Fix renderRotated
+ - Use QueryableOrderedSet for Collidables
+ - Refactor TextBoxComponent
+ - Fix bugs with TextBoxComponent
+ - Improve error message for composed components
+ - Fix `game.size` to take zoom into consideration 
+ - Fix `camera.followComponent` when `zoom != 1`
+ - Add `anchor` for `ShapeComponent` constructor
+ - Fix rendering of polygons in `ShapeComponent`
+ - Add `SpriteAnimation` support to parallax
+ - Fix `Parallax` alignment for images with different width and height
+ - Fix `ImageComposition` image bounds validation
+ - Improved the internal `RenderObject` widget performance
+ - Add `Matrix4` extensions
+ - `Camera.apply` is done with matrix transformations
+ - `Camera` zooming is taking current `relativeOffset` into account
+ - Fix gestures for when `isHud = true` and `Camera` is modified
+ - Fix `Camera` zoom behaviour with offset/anchor
+
+## [1.0.0-releasecandidate.11]
+ - Replace deprecated analysis option lines-of-executable-code with source-lines-of-code
+ - Fix the anchor of SpriteWidget
+ - Add test for re-adding previously removed component
+ - Add possibility to dynamically change priority of components
+ - Add onCollisionEnd to make it possible for the user to easily detect when a collision ends
+ - Adding test coverage to packages
+ - Possibility to have non-fullscreen ParallaxComponent
+ - No need to send size in ParallaxComponent.fromParallax since Parallax already contains it
+ - Fix Text Rendering not working properly
+ - Add more useful methods to the IsometricTileMap component
+ - Add Hoverables
+ - Brief semantic update to second tutorial.
+
+## [1.0.0-rc10]
  - Updated tutorial documentation to indicate use of new version
  - Fix bounding box check in collision detection
  - Refactor on flame input system to correctly take camera into account
  - Adding `SpriteAnimationGroupComponent`
  - Allow isometric tile maps with custom heights
  - Add a new renderRect method to Sprite
+ - Addresses the TODO to change the camera public APIs to take Anchors for relativePositions
+ - Adds methods to support moving the camera relative to its current position
+ - Abstracting the text api to allow custom text renderers on the framework
+ - Set the same debug mode for children as for the parent when added
+ - Fix camera projections when camera is zoomed
+ - Fix collision detection system with angle and parentAngle
+ - Fix rendering of shapes that aren't HitboxShape
 
 ## [1.0.0-rc9]
  - Fix input bug with other anchors than center

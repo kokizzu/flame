@@ -4,16 +4,36 @@ import 'dart:ui';
 
 import 'package:flutter/widgets.dart' hide Image;
 
+import '../../components.dart';
 import '../extensions/vector2.dart';
 import '../palette.dart';
-import '../text_config.dart';
+import '../text.dart';
 import 'position_component.dart';
 
+/// A set of configurations for the [TextBoxComponent] itself, as opposed to
+/// the [TextRenderer], which contains the configuration for how to render the
+/// text only (font size, color, family, etc).
 class TextBoxConfig {
+  /// Max width this paragraph can take. Lines will be broken trying to respect
+  /// word boundaries in as many lines as necessary.
   final double maxWidth;
+
+  /// Margins of the text box with respect to the [PositionComponent.size].
   final EdgeInsets margins;
+
+  /// Defaults to 0. If not zero, the characters will appear one-by-one giving
+  /// a typing effect to the text box, and this will be the delay in seconds
+  /// between each character.
   final double timePerChar;
+
+  /// Defaults to 0. If not zero, this component will disappear after this many
+  /// seconds after being fully typed out.
   final double dismissDelay;
+
+  /// Only relevant if [timePerChar] is set. If true, the box will start with
+  /// the size to fit the first character and grow as more lines are typed.
+  /// If false, the box will start with the full necessary size from the
+  /// beginning (both width and height).
   final bool growingBox;
 
   TextBoxConfig({
@@ -25,14 +45,14 @@ class TextBoxConfig {
   });
 }
 
-class TextBoxComponent extends PositionComponent {
+class TextBoxComponent<T extends TextRenderer> extends PositionComponent {
   static final Paint _imagePaint = BasicPalette.white.paint()
     ..filterQuality = FilterQuality.high;
-  Vector2 _gameSize = Vector2.zero();
 
   final String _text;
-  final TextConfig _config;
+  final T _textRenderer;
   final TextBoxConfig _boxConfig;
+  final double pixelRatio;
 
   late List<String> _lines;
   double _maxLineWidth = 0.0;
@@ -45,41 +65,59 @@ class TextBoxComponent extends PositionComponent {
 
   String get text => _text;
 
-  TextConfig get config => _config;
+  TextRenderer get renderer => _textRenderer;
 
   TextBoxConfig get boxConfig => _boxConfig;
 
   TextBoxComponent(
     String text, {
-    TextConfig? config,
+    T? textRenderer,
     TextBoxConfig? boxConfig,
+    double? pixelRatio,
     Vector2? position,
-    Vector2? size,
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
   })  : _text = text,
         _boxConfig = boxConfig ?? TextBoxConfig(),
-        _config = config ?? TextConfig(),
-        super(position: position, size: size) {
+        _textRenderer = textRenderer ?? TextRenderer.createDefault<T>(),
+        pixelRatio = pixelRatio ?? window.devicePixelRatio,
+        super(
+          position: position,
+          scale: scale,
+          angle: angle,
+          anchor: anchor,
+          priority: priority,
+        ) {
     _lines = [];
     double? lineHeight;
     text.split(' ').forEach((word) {
       final possibleLine = _lines.isEmpty ? word : '${_lines.last} $word';
-      final painter = _config.toTextPainter(possibleLine);
-      lineHeight ??= painter.height;
-      if (painter.width <=
-          _boxConfig.maxWidth - _boxConfig.margins.horizontal) {
+      lineHeight ??= _textRenderer.measureTextHeight(possibleLine);
+
+      final textWidth = _textRenderer.measureTextWidth(possibleLine);
+      if (textWidth <= _boxConfig.maxWidth - _boxConfig.margins.horizontal) {
         if (_lines.isNotEmpty) {
           _lines.last = possibleLine;
         } else {
           _lines.add(possibleLine);
         }
-        _updateMaxWidth(painter.width);
+        _updateMaxWidth(textWidth);
       } else {
         _lines.add(word);
-        _updateMaxWidth(_config.toTextPainter(word).width);
+        _updateMaxWidth(textWidth);
       }
     });
     _totalLines = _lines.length;
     _lineHeight = lineHeight ?? 0.0;
+    size = _recomputeSize();
+  }
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    await redraw();
   }
 
   void _updateMaxWidth(double w) {
@@ -92,9 +130,13 @@ class TextBoxComponent extends PositionComponent {
 
   bool get finished => _lifeTime > totalCharTime + _boxConfig.dismissDelay;
 
+  int get _actualTextLength {
+    return _lines.map((e) => e.length).fold(0, (p, c) => p + c);
+  }
+
   int get currentChar => _boxConfig.timePerChar == 0.0
-      ? _text.length
-      : math.min(_lifeTime ~/ _boxConfig.timePerChar, _text.length);
+      ? _actualTextLength
+      : math.min(_lifeTime ~/ _boxConfig.timePerChar, _actualTextLength);
 
   int get currentLine {
     var totalCharCount = 0;
@@ -108,22 +150,13 @@ class TextBoxComponent extends PositionComponent {
     return _lines.length - 1;
   }
 
-  @override
-  Vector2 get size => Vector2(width, height);
-
   double getLineWidth(String line, int charCount) {
-    return _config
-        .toTextPainter(line.substring(0, math.min(charCount, line.length)))
-        .width;
+    return _textRenderer.measureTextWidth(
+      line.substring(0, math.min(charCount, line.length)),
+    );
   }
 
-  double? _cachedWidth;
-
-  @override
-  double get width {
-    if (_cachedWidth != null) {
-      return _cachedWidth!;
-    }
+  Vector2 _recomputeSize() {
     if (_boxConfig.growingBox) {
       var i = 0;
       var totalCharCount = 0;
@@ -136,19 +169,15 @@ class TextBoxComponent extends PositionComponent {
         i++;
         return getLineWidth(line, charCount);
       }).reduce(math.max);
-      _cachedWidth = textWidth + _boxConfig.margins.horizontal;
+      return Vector2(
+        textWidth + _boxConfig.margins.horizontal,
+        _lineHeight * _lines.length + _boxConfig.margins.vertical,
+      );
     } else {
-      _cachedWidth = _boxConfig.maxWidth + _boxConfig.margins.horizontal;
-    }
-    return _cachedWidth!;
-  }
-
-  @override
-  double get height {
-    if (_boxConfig.growingBox) {
-      return _lineHeight * _lines.length + _boxConfig.margins.vertical;
-    } else {
-      return _lineHeight * _totalLines + _boxConfig.margins.vertical;
+      return Vector2(
+        _boxConfig.maxWidth + _boxConfig.margins.horizontal,
+        _lineHeight * _totalLines + _boxConfig.margins.vertical,
+      );
     }
   }
 
@@ -157,23 +186,24 @@ class TextBoxComponent extends PositionComponent {
     if (_cache == null) {
       return;
     }
-    super.render(c);
+    c.save();
+    c.scale(1 / pixelRatio);
     c.drawImage(_cache!, Offset.zero, _imagePaint);
+    c.restore();
   }
 
-  @override
-  void onGameResize(Vector2 gameSize) {
-    super.onGameResize(gameSize);
-    _gameSize = gameSize;
-  }
-
-  Future<Image> _redrawCache() {
+  Future<Image> _fullRenderAsImage(Vector2 size) {
     final recorder = PictureRecorder();
-    final c = Canvas(recorder, _gameSize.toRect());
+    final c = Canvas(recorder, size.toRect());
+    c.scale(pixelRatio);
     _fullRender(c);
-    return recorder.endRecording().toImage(width.toInt(), height.toInt());
+    return recorder.endRecording().toImage(
+          (width * pixelRatio).ceil(),
+          (height * pixelRatio).ceil(),
+        );
   }
 
+  /// Override this method to provide a custom background to the text box.
   void drawBackground(Canvas c) {}
 
   void _fullRender(Canvas c) {
@@ -192,11 +222,13 @@ class TextBoxComponent extends PositionComponent {
   }
 
   void _drawLine(Canvas c, String line, double dy) {
-    _config.toTextPainter(line).paint(c, Offset(_boxConfig.margins.left, dy));
+    _textRenderer.render(c, line, Vector2(_boxConfig.margins.left, dy));
   }
 
-  void redrawLater() async {
-    _cache = await _redrawCache();
+  Future<void> redraw() async {
+    final newSize = _recomputeSize();
+    _cache = await _fullRenderAsImage(newSize);
+    size = newSize;
   }
 
   @override
@@ -204,8 +236,7 @@ class TextBoxComponent extends PositionComponent {
     super.update(dt);
     _lifeTime += dt;
     if (_previousChar != currentChar) {
-      _cachedWidth = null;
-      redrawLater();
+      redraw();
     }
     _previousChar = currentChar;
   }

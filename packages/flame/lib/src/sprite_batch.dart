@@ -3,11 +3,11 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 
+import '../game.dart';
 import 'assets/images.dart';
 import 'extensions/image.dart';
 import 'extensions/vector2.dart';
 import 'flame.dart';
-import 'game/game.dart';
 
 extension SpriteBatchExtension on Game {
   /// Utility method to load and cache the image for a [SpriteBatch] based on its options
@@ -67,7 +67,7 @@ class BatchItem {
     required this.source,
     required this.transform,
     required this.color,
-  })   : matrix = Matrix4(
+  })  : matrix = Matrix4(
           transform.scos, transform.ssin, 0, 0, //
           -transform.ssin, transform.scos, 0, 0, //
           0, 0, _defaultScale, 0, //

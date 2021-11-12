@@ -28,6 +28,10 @@ class GameLoop {
     _ticker.stop();
   }
 
+  void dispose() {
+    _ticker.dispose();
+  }
+
   void pause() {
     _ticker.muted = true;
     previous = Duration.zero;
@@ -35,5 +39,10 @@ class GameLoop {
 
   void resume() {
     _ticker.muted = false;
+    // If the game has started paused, we need to start the ticker
+    // as it would not have been started yet
+    if (!_ticker.isActive) {
+      start();
+    }
   }
 }

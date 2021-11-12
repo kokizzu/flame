@@ -1,5 +1,3 @@
-#
-
 <p align="center">
   <a href="https://flame-engine.org">
     <img alt="flame" width="200px" src="https://user-images.githubusercontent.com/6718144/101553774-3bc7b000-39ad-11eb-8a6a-de2daa31bd64.png">
@@ -11,15 +9,15 @@ A minimalistic Flutter game engine.
 </p>
 
 <p align="center">
-  <a title="Pub" href="https://pub.dartlang.org/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout&include_prereleases" /></a>
-  <a title="Pub" href="https://pub.dartlang.org/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout" /></a>
-  <img src="https://github.com/flame-engine/flame/workflows/Test/badge.svg?branch=main&event=push" alt="Test" />
+  <a title="Pub" href="https://pub.dev/packages/flame/versions#prerelease" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout&include_prereleases" /></a>
+  <a title="Pub" href="https://pub.dev/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout" /></a>
+  <img src="https://github.com/flame-engine/flame/workflows/cicd/badge.svg?branch=main&event=push" alt="Test" />
   <a title="Discord" href="https://discord.gg/pxrBmy4" ><img src="https://img.shields.io/discord/509714518008528896.svg" /></a>
 </p>
 
 ---
 
-[English](/README.md) | [简体中文](/i18n/README-ZH.md) | [Polski](/i18n/README-PL.md) | [Русский](/i18n/README-RU.md)
+[English](/README.md) | [简体中文](/i18n/README-ZH.md) | [Polski](/i18n/README-PL.md) | [Русский](/i18n/README-RU.md) | [Español](/i18n/README-ES.md)
 
 ---
 
@@ -36,9 +34,9 @@ The `main` branch is the bleeding edge of the v1 migration. The `master-v0.x` br
 v0 release (where we are still merging some patches and crucial fixes).
 
 The current v1 release is
-<a title="Pub" href="https://pub.dartlang.org/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout&include_prereleases" /></a>
+<a title="Pub" href="https://pub.dev/packages/flame/versions#prerelease" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout&include_prereleases" /></a>
 on pub. The latest stable version so far is
-<a title="Pub" href="https://pub.dartlang.org/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout" /></a>.
+<a title="Pub" href="https://pub.dev/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout" /></a>.
 Feel free to choose the one that better suits your needs.
 
 ---
@@ -51,7 +49,7 @@ version.
 Here you can find the documentation for different versions:
 - Latest stable version: [Flame-engine website](https://flame-engine.org/)
 - Latest stable version: [GitHub docs](https://github.com/flame-engine/flame/tree/master-v0.x/doc)
-- Latest v1.0.0 version: [GitHub docs](https://github.com/flame-engine/flame/tree/1.0.0-rc9/doc)
+- Latest v1.0.0 version: [GitHub docs](https://github.com/flame-engine/flame/tree/1.0.0-releasecandidate.14/doc)
 
 The complete documentation can be found [here](https://github.com/flame-engine/flame/tree/main/doc).
 
@@ -63,7 +61,7 @@ The official site for Flame, which also contains the documentation can be found
 
 ## Help
 
-We have a Flame help channel on Fireslime's Discord, join it [here](https://discord.gg/pxrBmy4).
+We have a Flame help channel on Blue Fire's Discord, join it [here](https://discord.gg/5unKpdQD78).
 
 We also have a [FAQ](FAQ.md), so please search for your question there first.
 
@@ -86,17 +84,25 @@ Currently it provides you with:
 
 You can use whichever ones you want, as they are all somewhat independent.
 
+## Sponsors
+
+The Flame Engine's top sponsors:
+
+[![Cypher Stack](/media/logo_cypherstack.png)](https://cypherstack.com/)
+
+Want to sponsor Flame? Check our Patreon on the section below or contact us on Discord.
+
 ## Support
 
 The simplest way to show us your support is by giving the project a star.
 
 You can also support us by becoming a patron on Patreon:
 
-[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/fireslime)
+[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/bluefireoss)
 
 Or by making a single donation by buying us a coffee:
 
-[![Buy Me A Coffee](https://user-images.githubusercontent.com/835641/60540201-fcd7fa00-9ce4-11e9-87ec-1e98568e9f58.png)](https://www.buymeacoffee.com/fireslime)
+[![Buy Me A Coffee](https://user-images.githubusercontent.com/835641/60540201-fcd7fa00-9ce4-11e9-87ec-1e98568e9f58.png)](https://www.buymeacoffee.com/bluefire)
 
 You can also show on your repository that your game is made with Flame by using one of the following
 badges:

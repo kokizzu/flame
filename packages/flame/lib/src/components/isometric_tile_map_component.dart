@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import '../../components.dart';
 import '../extensions/vector2.dart';
 import '../spritesheet.dart';
 import 'position_component.dart';
@@ -18,7 +19,7 @@ class Block {
 }
 
 /// This component renders a tilemap, represented by an int matrix, given a
-/// tileset, in witch the integers are the block ids.
+/// tileset, in which the integers are the block ids.
 ///
 /// It can change the scale of each block by using the optional destTileSize
 /// property.
@@ -43,7 +44,19 @@ class IsometricTileMapComponent extends PositionComponent {
     this.destTileSize,
     this.tileHeight,
     Vector2? position,
-  }) : super(position: position);
+    Vector2? size,
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
+  }) : super(
+          position: position,
+          size: size,
+          scale: scale,
+          angle: angle,
+          anchor: anchor,
+          priority: priority,
+        );
 
   /// This is the size the tiles will be drawn (either original or overwritten).
   Vector2 get effectiveTileSize => destTileSize ?? tileset.srcSize;
@@ -53,8 +66,6 @@ class IsometricTileMapComponent extends PositionComponent {
 
   @override
   void render(Canvas c) {
-    super.render(c);
-
     final size = effectiveTileSize;
     for (var i = 0; i < matrix.length; i++) {
       for (var j = 0; j < matrix[i].length; j++) {
@@ -68,7 +79,7 @@ class IsometricTileMapComponent extends PositionComponent {
     }
   }
 
-  /// Get the position in witch a block must be in the isometric space.
+  /// Get the position in which a block must be in the isometric space.
   ///
   /// This does not include the (x,y) PositionComponent offset!
   Vector2 getBlockPosition(Block block) {
@@ -106,6 +117,14 @@ class IsometricTileMapComponent extends PositionComponent {
     final px = (cart.x / halfTile.x - 1).ceil();
     final py = (cart.y / halfTile.y).ceil();
     return Block(px, py);
+  }
+
+  void setBlockValue(Block pos, int block) {
+    matrix[pos.y][pos.x] = block;
+  }
+
+  int blockValue(Block pos) {
+    return matrix[pos.y][pos.x];
   }
 
   /// Return whether the matrix contains a block in its bounds.

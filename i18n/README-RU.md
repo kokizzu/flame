@@ -10,7 +10,10 @@
 </p>
 
 <p align="center">
-  <a title="Pub" href="https://pub.dartlang.org/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout" /></a> <img src="https://github.com/flame-engine/flame/workflows/Test/badge.svg?branch=master&event=push" alt="Test" /> <a title="Discord" href="https://discord.gg/pxrBmy4" ><img src="https://img.shields.io/discord/509714518008528896.svg" /></a>
+  <a title="Pub" href="https://pub.dev/packages/flame/versions#prerelease" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout&include_prereleases" /></a>
+  <a title="Pub" href="https://pub.dev/packages/flame" ><img src="https://img.shields.io/pub/v/flame.svg?style=popout" /></a>
+  <img src="https://github.com/flame-engine/flame/workflows/Test/badge.svg?branch=main&event=push" alt="Test" />
+  <a title="Discord" href="https://discord.gg/pxrBmy4" ><img src="https://img.shields.io/discord/509714518008528896.svg" /></a>
 </p>
 
 ---
@@ -41,7 +44,7 @@
 - Последняя стабильная версия: [GitHub docs](https://github.com/flame-engine/flame/tree/master-v0.x/doc)
 - Последняя версия v1.0.0: [GitHub docs](https://github.com/flame-engine/flame/tree/1.0.0-rc3/doc)
 
-Окончательный вариант документации находиься [сдесь](doc/README.md).
+Окончательный вариант документации находится [здесь](doc/README.md).
 
 Много примеров использования различных функций можно найти [тут](doc/examples), а хороший стартовый пример [тут](/example).
 
@@ -66,7 +69,7 @@
  - поддержка жестов и ввода
  - изображения, спрайты и таблицы спрайтов
  - базовая поддержка Rive
- - и немного других функций которые сделают разработкулегче
+ - и немного других функций которые сделают разработку легче
 
 Вы можете использовать любые из них, так как все они, в разной степени независимы.
 
@@ -76,11 +79,11 @@
 
 Так же вы можете оказать нам финансовую поддержку став патроном на Patreon:
 
-[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/fireslime)
+[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/bluefireoss)
 
 Или сделав разовое пожертвование, купив нам кофе:
 
-[![Buy Me A Coffee](https://user-images.githubusercontent.com/835641/60540201-fcd7fa00-9ce4-11e9-87ec-1e98568e9f58.png)](https://www.buymeacoffee.com/fireslime)
+[![Buy Me A Coffee](https://user-images.githubusercontent.com/835641/60540201-fcd7fa00-9ce4-11e9-87ec-1e98568e9f58.png)](https://www.buymeacoffee.com/bluefire)
 
 Еще вы можете показать в своем репозитории что ваш проект сделан с использованием Flame, поместив туда один из бейджей:
 
@@ -100,7 +103,7 @@ __ВНИМАНИЕ__: Мы работаем над доведением Flame д
 
 Приветствуется любая помощь! Коментарии, предложения, проблемы, PRы.
 
-Вы нашли ошибку или у вас есть предложения по улучшению Flame, откройте ишью и мы рсммотрим его как можно быстрее.
+Вы нашли ошибку или у вас есть предложения по улучшению Flame, откройте ишью и мы рaсcмотрим его как можно быстрее.
 
 Хотите внести свой вклад создав PR? PRы всегда приветствуются, просто создайте его из ветки `develop` и следуйте [чеклисту](.github/pull_request_template.md) который будет доступен при создании PR.
 
@@ -121,7 +124,7 @@ __ВНИМАНИЕ__: Мы работаем над доведением Flame д
 
 ## Благодарности
 
- * [Fireslime](https://fireslime.xyz), команда ответственная за поддержку Flame.
+ * [Blue Fire](https://patreon.com/bluefireoss), команда ответственная за поддержку Flame.
  * Все дружелюбные участники и люди которые помогают в сообществе.
  * [Luanpotter](https://github.com/luanpotter)'s основатель Flame и [audioplayers](https://github.com/luanpotter/audioplayer) библиотеки, которая является форком [rxlabz's](https://github.com/rxlabz/audioplayer).
  * Дарт порт [Box2D](https://github.com/google/box2d.dart).

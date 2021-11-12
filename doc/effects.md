@@ -1,12 +1,10 @@
 # Effects
 
-An effect can be applied to any `Component` that the effect supports.
+An effect can be added to any `Component` that the effect supports.
 
-At the moment there are only `PositionComponentEffect`s, which are applied to `PositionComponent`s,
-which are presented below.
-
-If you want to create an effect for another component just extend the `ComponentEffect` class and
-add your created effect to the component by calling `component.addEffect(yourEffect)`.
+If you want to create an effect for another component than the ones that already exist, just extend
+the `ComponentEffect` class and add your created effect to the component by calling
+`component.add(yourEffect)`.
 
 ## Common for all effects
 
@@ -35,17 +33,18 @@ the value you give it no matter where it started.
 When an effect is completed the callback `onComplete` will be called, it can be set as an optional
 argument to your effect.
 
-## Common for MoveEffect, ScaleEffect and RotateEffect (SimplePositionComponentEffects)
+## Common for MoveEffect, ScaleEffect, SizeEffect and RotateEffect (SimplePositionComponentEffects)
 
-A common thing for `MoveEffect`, `ScaleEffect` and `RotateEffect` is that it takes `duration` and
-`speed` as arguments, but only use one of them at a time.
+A common thing for `MoveEffect`, `ScaleEffect`, `SizeEffect` and `RotateEffect` is that it takes
+`duration` and `speed` as arguments, but only use one of them at a time.
 
  - Duration means the time it takes for one iteration from beginning to end, with alternation taken
  into account (but not `isInfinite`).
  - Speed is the speed of the effect
     + pixels per second for `MoveEffect`
-    + pixels per second for `ScaleEffect`
+    + pixels per second for `SizeEffect`
     + radians per second for `RotateEffect`
+    + percentage/100 per second for `ScaleEffect`
 
 One of these two needs to be defined, if both are defined `duration` takes precedence.
 
@@ -75,7 +74,7 @@ Usage example:
 import 'package:flame/effects.dart';
 
 // Square is a PositionComponent
-square.addEffect(MoveEffect(
+square.add(MoveEffect(
   path: [Vector2(200, 200), Vector2(200, 100), Vector(0, 50)],
   speed: 250.0,
   curve: Curves.bounceInOut,
@@ -93,6 +92,29 @@ component will first move to `(120, 0)` and then to `(120, 100)`.
 
 ## ScaleEffect
 
+Applied to `PositionComponent`s, this effect can be used to change the scale with which the
+component and its children is rendered on the canvas with, using an
+[animation curve](https://api.flutter.dev/flutter/animation/Curves-class.html).
+
+This also affects the `scaledSize` property of the component.
+
+The speed is measured in percentage/100 per second, and remember that you can give `duration` as an
+argument instead of `speed`.
+
+Usage example:
+```dart
+import 'package:flame/effects.dart';
+
+// Square is a PositionComponent
+square.add(ScaleEffect(
+  scale: Vector2.all(2.0),
+  speed: 1.0,
+  curve: Curves.bounceInOut,
+));
+```
+
+## SizeEffect
+
 Applied to `PositionComponent`s, this effect can be used to change the width and height of the
 component, using an [animation curve](https://api.flutter.dev/flutter/animation/Curves-class.html).
 
@@ -104,8 +126,8 @@ Usage example:
 import 'package:flame/effects.dart';
 
 // Square is a PositionComponent
-square.addEffect(ScaleEffect(
-  size: Size(300, 300),
+square.add(SizeEffect(
+  size: Vector2.all(300),
   speed: 250.0,
   curve: Curves.bounceInOut,
 ));
@@ -130,7 +152,7 @@ import 'dart:math';
 import 'package:flame/effects.dart';
 
 // Square is a PositionComponent
-square.addEffect(RotateEffect(
+square.add(RotateEffect(
   radians: 2 * pi, // In radians
   speed: 1.0, // Radians per second
   curve: Curves.easeInOut,
@@ -141,9 +163,9 @@ square.addEffect(RotateEffect(
 
 This effect is a combination of other effects. You provide it with a list of your predefined
 effects.
- 
+
 The effects in the list should only be passed to the `SequenceEffect`, never added to a
-`PositionComponent` with `addEffect`.
+`PositionComponent` with `add`.
 
 **Note**:  No effect (except the last) added to the sequence should have their `isInfinite` property
 set to `true`, because then naturally the sequence will get stuck once it gets to that effect.
@@ -153,40 +175,92 @@ You can make the sequence go in a loop by setting both `isInfinite: true` and `i
 Usage example:
 ```dart
 final sequence = SequenceEffect(
-    effects: [move1, scale, move2, rotate],
-    isInfinite: true, 
+    effects: [move1, size, move2, rotate],
+    isInfinite: true,
     isAlternating: true);
-myComponent.addEffect(sequence);
+myComponent.add(sequence);
 ```
 
 An example of how to use the `SequenceEffect` can be found
 [here](https://github.com/flame-engine/flame/tree/main/examples/lib/stories/effects/sequence_effect.dart).
- 
+
 ## CombinedEffect
 
-This effect runs several different type of effects simultaneously. You provide it with a list of
-your predefined effects and an offset in time which should pass in between starting each effect.
- 
+This effect runs several different type of effects simultaneously on the component that it is added
+to. You provide it with a list of your predefined effects and if you don't want them to start or end
+at the same time you can utilize the `initialDelay` and `peakDelay` to add time before or after the
+effect runs.
+
 The effects in the list should only be passed to the `CombinedEffect`, never added to a
-`PositionComponent` with `addEffect`.
+`PositionComponent` with `add` at the same time.
 
-**Note**: No effects should be of the same type since they will clash when trying to modify the
-`PositionComponent`.
-
-You can make the combined effect go in a loop by setting both `isInfinite: true` and
-`isAlternating: true`.
+**Note**: No effects should be of the same type since they will clash when trying to modify for
+example a `PositionComponent`.
 
 Usage example:
 ```dart
-final combination = CombinedEffect(
-    effects: [move, scale, rotate],
-    isInfinite: true, 
-    isAlternating: true);
-myComponent.addEffect(combination);
+final combination = CombinedEffect(effects: [move, size, rotate]);
+myComponent.add(combination);
 ```
 
 An example of how to use the `CombinedEffect` can be found
 [here](https://github.com/flame-engine/flame/tree/main/examples/lib/stories/effects/combined_effect.dart).
+
+## Common for paint effects
+
+Flame provides an useful mixin called `HasPaint` that adds paint variables to your components.
+It adds a default `Paint` attribute to the class and an additional collection of paints in case
+your component requires more than a single `Paint`. In addition to those attributes, a few
+methods to make it easy to manipulate the paints will became available, for example `setOpacity`.
+
+This mixin is used by some of Flame's own components like `SpriteComponent`,
+`SpriteAnimationComponent`, but you can also use it on you any of your custom components. Any
+component that uses this mixin can have paint effects applied to it.
+
+By default, all effects will animate the main paint of the component. That can be changed by passing
+a `paintId` to the effect contructor. This can be useful for when you have a component that have
+multiple paints; for example a component which has a foreground and background layer.
+
+Below is a list of the available paint effects.
+
+## OpacityEffect
+
+This effect allows you animate the opacity of your paint. It receives a double for the opacity,
+which must be between 0 and 1 (including), and a duration in seconds, represented by a double as
+well.
+
+Usage example:
+
+```dart
+myComponent.add(
+  OpacityEffect(
+    opacity: 0,
+    duration: 0.5,
+  ),
+);
+```
+
+An example of how to use the `OpacityEffect` can be found
+[here](https://github.com/flame-engine/flame/tree/main/examples/lib/stories/effects/opacity_effect.dart).
+
+## ColorEffect
+
+This effect will change the base color of the paint, causing the rendered component to be tinted by
+the provided color.
+
+Usage example:
+
+```dart
+myComponent.add(
+  ColorEffect(
+    color: const Color(0xFF00FF00),
+    duration: 0.5,
+  ),
+);
+```
+
+A more in-depth example can be found
+[here](https://github.com/flame-engine/flame/tree/main/examples/lib/stories/effects/color_effect.dart).
 
 ## Examples
 

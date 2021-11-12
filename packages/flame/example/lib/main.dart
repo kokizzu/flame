@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
-import 'package:flame/gestures.dart';
+import 'package:flame/input.dart';
 import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 
@@ -26,8 +26,6 @@ class Square extends PositionComponent {
 
   @override
   void render(Canvas c) {
-    super.render(c);
-
     c.drawRect(size.toRect(), white);
     c.drawRect(const Rect.fromLTWH(0, 0, 3, 3), red);
     c.drawRect(Rect.fromLTWH(width / 2, height / 2, 3, 3), blue);
@@ -41,18 +39,19 @@ class Square extends PositionComponent {
   }
 
   @override
-  void onMount() {
-    super.onMount();
+  Future<void> onLoad() async {
+    super.onLoad();
     size.setValues(squareSize, squareSize);
     anchor = Anchor.center;
   }
 }
 
-class MyGame extends BaseGame with DoubleTapDetector, TapDetector {
+class MyGame extends FlameGame with DoubleTapDetector, TapDetector {
   bool running = true;
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     add(
       Square()
         ..x = 100
@@ -61,15 +60,11 @@ class MyGame extends BaseGame with DoubleTapDetector, TapDetector {
   }
 
   @override
-  void onTapUp(TapUpInfo event) {
-    final touchArea = RectExtension.fromVector2Center(
-      center: event.eventPosition.game,
-      width: 20,
-      height: 20,
-    );
+  void onTapUp(TapUpInfo info) {
+    final touchPoint = info.eventPosition.game;
 
-    final handled = components.any((c) {
-      if (c is PositionComponent && c.toRect().overlaps(touchArea)) {
+    final handled = children.any((c) {
+      if (c is PositionComponent && c.containsPoint(touchPoint)) {
         remove(c);
         return true;
       }
@@ -77,9 +72,7 @@ class MyGame extends BaseGame with DoubleTapDetector, TapDetector {
     });
 
     if (!handled) {
-      add(Square()
-        ..x = touchArea.left
-        ..y = touchArea.top);
+      add(Square()..position = touchPoint);
     }
   }
 

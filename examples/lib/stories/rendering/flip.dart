@@ -3,9 +3,10 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 
-class FlipSpriteGame extends BaseGame {
+class FlipSpriteGame extends FlameGame {
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     final image = await images.load('animations/chopper.png');
 
     final regular = buildAnimationComponent(image);
@@ -14,12 +15,12 @@ class FlipSpriteGame extends BaseGame {
 
     final flipX = buildAnimationComponent(image);
     flipX.y = 300;
-    flipX.renderFlipX = true;
+    flipX.flipHorizontally();
     add(flipX);
 
     final flipY = buildAnimationComponent(image);
     flipY.y = 500;
-    flipY.renderFlipY = true;
+    flipY.flipVertically();
     add(flipY);
   }
 

@@ -92,20 +92,22 @@ class ImageComposition {
     isAntiAlias ??= defaultAntiAlias;
 
     assert(
-      imageRect.contains(source.topLeft) &&
-          imageRect.contains(source.bottomRight),
+      imageRect.topLeft <= source.topLeft &&
+          imageRect.bottomRight >= source.bottomRight,
       'Source rect should fit within in the image constraints',
     );
 
-    _composes.add(_Composed(
-      image,
-      position,
-      source,
-      angle,
-      anchor,
-      isAntiAlias,
-      blendMode,
-    ));
+    _composes.add(
+      _Composed(
+        image,
+        position,
+        source,
+        angle,
+        anchor,
+        isAntiAlias,
+        blendMode,
+      ),
+    );
   }
 
   void clear() => _composes.clear();

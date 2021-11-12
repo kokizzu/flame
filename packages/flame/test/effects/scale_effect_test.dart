@@ -1,93 +1,119 @@
 import 'dart:math';
 
-import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
+import 'package:flame_test/flame_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'effect_test_utils.dart';
 
-void main() {
-  final random = Random();
-  Vector2 randomVector2() => (Vector2.random(random) * 100)..round();
-  final argumentSize = randomVector2();
-  TestComponent component() => TestComponent(size: randomVector2());
+class Elements extends BaseElements {
+  Elements(Random random) : super(random);
+
+  @override
+  TestComponent component() => TestComponent(scale: randomVector2());
 
   ScaleEffect effect({bool isInfinite = false, bool isAlternating = false}) {
     return ScaleEffect(
-      size: argumentSize,
+      scale: argumentScale,
       duration: 1 + random.nextInt(100).toDouble(),
       isInfinite: isInfinite,
       isAlternating: isAlternating,
-    );
+    )..skipEffectReset = true;
   }
+}
 
-  testWidgets('ScaleEffect can scale', (WidgetTester tester) async {
-    effectTest(
-      tester,
-      component(),
-      effect(),
-      expectedSize: argumentSize,
-    );
-  });
-
-  testWidgets(
-    'ScaleEffect will stop scaling after it is done',
-    (WidgetTester tester) async {
+void main() {
+  testWidgetsRandom(
+    'ScaleEffect can scale',
+    (Random random, WidgetTester tester) async {
+      final e = Elements(random);
       effectTest(
         tester,
-        component(),
-        effect(),
-        expectedSize: argumentSize,
-        iterations: 1.5,
+        e.component(),
+        e.effect(),
+        expectedScale: e.argumentScale,
+        random: random,
       );
     },
   );
 
-  testWidgets('ScaleEffect can alternate', (WidgetTester tester) async {
-    final PositionComponent positionComponent = component();
-    effectTest(
-      tester,
-      positionComponent,
-      effect(isAlternating: true),
-      expectedSize: positionComponent.size.clone(),
-    );
-  });
+  testWidgetsRandom(
+    'ScaleEffect will stop scaling after it is done',
+    (Random random, WidgetTester tester) async {
+      final e = Elements(random);
+      effectTest(
+        tester,
+        e.component(),
+        e.effect(),
+        expectedScale: e.argumentScale,
+        iterations: 1.5,
+        random: random,
+      );
+    },
+  );
 
-  testWidgets(
-    'ScaleEffect can alternate and be infinite',
-    (WidgetTester tester) async {
-      final PositionComponent positionComponent = component();
+  testWidgetsRandom(
+    'ScaleEffect can alternate',
+    (Random random, WidgetTester tester) async {
+      final e = Elements(random);
+      final positionComponent = e.component();
       effectTest(
         tester,
         positionComponent,
-        effect(isInfinite: true, isAlternating: true),
-        expectedSize: positionComponent.size.clone(),
-        shouldComplete: false,
+        e.effect(isAlternating: true),
+        expectedScale: positionComponent.scale.clone(),
+        random: random,
       );
     },
   );
 
-  testWidgets('ScaleEffect alternation can peak', (WidgetTester tester) async {
-    final PositionComponent positionComponent = component();
-    effectTest(
-      tester,
-      positionComponent,
-      effect(isAlternating: true),
-      expectedSize: argumentSize,
-      shouldComplete: false,
-      iterations: 0.5,
-    );
-  });
+  testWidgetsRandom(
+    'ScaleEffect can alternate and be infinite',
+    (Random random, WidgetTester tester) async {
+      final e = Elements(random);
+      final positionComponent = e.component();
+      effectTest(
+        tester,
+        positionComponent,
+        e.effect(isInfinite: true, isAlternating: true),
+        expectedScale: positionComponent.scale.clone(),
+        shouldComplete: false,
+        random: random,
+      );
+    },
+  );
 
-  testWidgets('ScaleEffect can be infinite', (WidgetTester tester) async {
-    final PositionComponent positionComponent = component();
-    effectTest(
-      tester,
-      positionComponent,
-      effect(isInfinite: true),
-      expectedSize: argumentSize,
-      iterations: 3.0,
-      shouldComplete: false,
-    );
-  });
+  testWidgetsRandom(
+    'ScaleEffect alternation can peak',
+    (Random random, WidgetTester tester) async {
+      final e = Elements(random);
+      final positionComponent = e.component();
+      effectTest(
+        tester,
+        positionComponent,
+        e.effect(isAlternating: true),
+        expectedScale: e.argumentScale,
+        shouldComplete: false,
+        iterations: 0.5,
+        random: random,
+      );
+    },
+  );
+
+  testWidgetsRandom(
+    'ScaleEffect can be infinite',
+    (Random random, WidgetTester tester) async {
+      final e = Elements(random);
+      final positionComponent = e.component();
+      effectTest(
+        tester,
+        positionComponent,
+        e.effect(isInfinite: true),
+        expectedScale: e.argumentScale,
+        iterations: 3.0,
+        shouldComplete: false,
+        random: random,
+      );
+    },
+  );
 }

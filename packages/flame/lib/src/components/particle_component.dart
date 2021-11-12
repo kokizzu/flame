@@ -4,19 +4,17 @@ import '../particles/particle.dart';
 import 'component.dart';
 
 /// Base container for [Particle] instances to be attach
-/// to a [Component] tree. Could be added either to BaseGame
-/// or an implementation of BaseComponent.
+/// to a [Component] tree. Could be added either to FlameGame
+/// or an implementation of [Component].
 /// Proxies [Component] lifecycle hooks to nested [Particle].
 class ParticleComponent extends Component {
   Particle particle;
 
-  ParticleComponent({
-    required this.particle,
-  });
+  ParticleComponent(this.particle);
 
-  /// This [ParticleComponent] will be removed by the BaseGame.
+  /// This [ParticleComponent] will be removed by the FlameGame.
   @override
-  bool get shouldRemove => particle.shouldRemove();
+  bool get shouldRemove => particle.shouldRemove;
 
   /// Returns progress of the child [Particle].
   ///

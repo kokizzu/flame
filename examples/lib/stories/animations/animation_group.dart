@@ -2,18 +2,19 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:flame/gestures.dart';
+import 'package:flame/input.dart';
 
 enum RobotState {
   idle,
   running,
 }
 
-class AnimationGroupExample extends BaseGame with TapDetector {
+class AnimationGroupExample extends FlameGame with TapDetector {
   late SpriteAnimationGroupComponent robot;
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     final running = await loadSpriteAnimation(
       'animations/robot.png',
       SpriteAnimationData.sequenced(

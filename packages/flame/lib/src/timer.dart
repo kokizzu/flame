@@ -46,41 +46,48 @@ class Timer {
     }
   }
 
+  /// Start the timer from 0.
   void start() {
-    _current = 0;
-    _running = true;
+    reset();
+    resume();
   }
 
+  /// Stop and reset the timer.
   void stop() {
-    _current = 0;
-    _running = false;
+    reset();
+    pause();
   }
 
+  /// Reset the timer to 0, but continue running if it currently is running.
+  void reset() {
+    _current = 0;
+  }
+
+  ///  Pause the timer (no-op if it is already paused).
   void pause() {
     _running = false;
   }
 
+  /// Resume a paused timer (no-op if it is already running).
   void resume() {
     _running = true;
   }
 }
 
 /// Simple component which wraps a [Timer] instance allowing it to be easily
-/// used inside a BaseGame game.
+/// used inside a FlameGame game.
 class TimerComponent extends Component {
   Timer timer;
+  final bool removeOnFinish;
 
-  TimerComponent(this.timer);
+  TimerComponent(this.timer, {this.removeOnFinish = false});
 
   @override
   void update(double dt) {
     super.update(dt);
     timer.update(dt);
+    if (removeOnFinish && timer.finished) {
+      removeFromParent();
+    }
   }
-
-  @override
-  void render(Canvas canvas) {}
-
-  @override
-  bool get shouldRemove => timer.finished;
 }

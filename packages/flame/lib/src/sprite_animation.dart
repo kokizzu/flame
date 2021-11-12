@@ -96,7 +96,8 @@ class SpriteAnimationFrame {
 
 typedef OnCompleteSpriteAnimation = void Function();
 
-/// Represents a sprite animation, that is, a list of sprites that change with time.
+/// Represents a sprite animation, that is, a list of sprites that change with
+/// time.
 class SpriteAnimation {
   /// The frames that compose this animation.
   List<SpriteAnimationFrame> frames = [];
@@ -104,7 +105,8 @@ class SpriteAnimation {
   /// Index of the current frame that should be displayed.
   int currentIndex = 0;
 
-  /// Current clock time (total time) of this animation, in seconds, since last frame.
+  /// Current clock time (total time) of this animation, in seconds, since last
+  /// frame.
   ///
   /// It's ticked by the update method. It's reset every frame change.
   double clock = 0.0;
@@ -112,7 +114,8 @@ class SpriteAnimation {
   /// Total elapsed time of this animation, in seconds, since start or a reset.
   double elapsed = 0.0;
 
-  /// Whether the animation loops after the last sprite of the list, going back to the first, or keeps returning the last when done.
+  /// Whether the animation loops after the last sprite of the list, going back
+  /// to the first, or keeps returning the last when done.
   bool loop = true;
 
   /// Registered method to be triggered when the animation complete.
@@ -192,6 +195,25 @@ class SpriteAnimation {
     loop = true;
   }
 
+  SpriteAnimation.variableSpriteList(
+    List<Sprite> sprites, {
+    required List<double> stepTimes,
+    this.loop = true,
+  }) {
+    if (sprites.isEmpty) {
+      throw Exception('You must have at least one frame!');
+    }
+    if (stepTimes.length != sprites.length) {
+      throw Exception('The length of stepTimes and sprites must be the same!');
+    }
+
+    frames = List.generate(
+      sprites.length,
+      (i) => SpriteAnimationFrame(sprites[i], stepTimes[i]),
+      growable: false,
+    );
+  }
+
   /// Takes a path of an image, a [SpriteAnimationData] and loads the sprite animation
   /// When the [images] is omitted, the global [Flame.images] is used
   static Future<SpriteAnimation> load(
@@ -231,6 +253,7 @@ class SpriteAnimation {
     clock = 0.0;
     elapsed = 0.0;
     currentIndex = 0;
+    _done = false;
   }
 
   /// Gets the current [Sprite] that should be shown.
@@ -244,30 +267,29 @@ class SpriteAnimation {
   /// If [loop] is false, returns whether the animation is done (fixed in the last Sprite).
   ///
   /// Always returns false otherwise.
-  bool done() {
-    return loop ? false : (isLastFrame && clock >= currentFrame.stepTime);
-  }
+  bool _done = false;
+  bool done() => _done;
 
   /// Updates this animation, ticking the lifeTime by an amount [dt] (in seconds).
   void update(double dt) {
     clock += dt;
     elapsed += dt;
-    if (isSingleFrame) {
+    if (isSingleFrame || _done) {
       return;
     }
-    if (!loop && isLastFrame) {
-      onComplete?.call();
-      return;
-    }
-    while (clock > currentFrame.stepTime) {
-      if (!isLastFrame) {
+    while (clock >= currentFrame.stepTime) {
+      if (isLastFrame) {
+        if (loop) {
+          clock -= currentFrame.stepTime;
+          currentIndex = 0;
+        } else {
+          _done = true;
+          onComplete?.call();
+          return;
+        }
+      } else {
         clock -= currentFrame.stepTime;
         currentIndex++;
-      } else if (loop) {
-        clock -= currentFrame.stepTime;
-        currentIndex = 0;
-      } else {
-        break;
       }
     }
   }

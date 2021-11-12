@@ -1,60 +1,102 @@
-import 'dart:math';
-
 import 'package:flutter/widgets.dart';
 
+import '../../assets.dart';
+import '../../extensions.dart';
 import '../anchor.dart';
-import '../extensions/size.dart';
 import '../sprite.dart';
 import 'animation_widget.dart';
+import 'base_future_builder.dart';
+import 'sprite_painter.dart';
 
 export '../sprite.dart';
 
-/// A [StatefulWidget] that renders a still [Sprite].
-///
+/// A [StatelessWidget] which renders a Sprite
 /// To render an animation, use [SpriteAnimationWidget].
 class SpriteWidget extends StatelessWidget {
+  /// The positioning [Anchor]
+  final Anchor anchor;
+
+  /// The angle to rotate this [Sprite], in rad. (default = 0)
+  final double angle;
+
+  /// Holds the position of the sprite on the image
+  final Vector2? srcPosition;
+
+  /// Holds the size of the sprite on the image
+  final Vector2? srcSize;
+
+  /// A builder function that is called if the loading fails
+  final WidgetBuilder? errorBuilder;
+
+  /// A builder function that is called while the loading is on the way
+  final WidgetBuilder? loadingBuilder;
+
+  final Future<Sprite> Function() _spriteFuture;
+
+  SpriteWidget({
+    required Sprite sprite,
+    this.anchor = Anchor.topLeft,
+    this.angle = 0,
+    this.srcPosition,
+    this.srcSize,
+    this.errorBuilder,
+    this.loadingBuilder,
+  }) : _spriteFuture = (() => Future.value(sprite));
+
+  SpriteWidget.asset({
+    required String path,
+    Images? images,
+    this.anchor = Anchor.topLeft,
+    this.angle = 0,
+    this.srcPosition,
+    this.srcSize,
+    this.errorBuilder,
+    this.loadingBuilder,
+  }) : _spriteFuture = (() => Sprite.load(
+              path,
+              srcSize: srcSize,
+              srcPosition: srcPosition,
+              images: images,
+            ));
+
+  @override
+  Widget build(BuildContext context) {
+    return BaseFutureBuilder<Sprite>(
+      futureBuilder: _spriteFuture,
+      builder: (_, sprite) {
+        return _SpriteWidget(
+          sprite: sprite,
+          anchor: anchor,
+          angle: angle,
+        );
+      },
+      errorBuilder: errorBuilder,
+      loadingBuilder: loadingBuilder,
+    );
+  }
+}
+
+/// A [StatefulWidget] that renders a still [Sprite].
+class _SpriteWidget extends StatelessWidget {
   /// The [Sprite] to be rendered
   final Sprite sprite;
 
   /// The positioning [Anchor] for the [sprite]
   final Anchor anchor;
 
-  const SpriteWidget({
+  /// The angle to rotate this [sprite], in rad. (default = 0)
+  final double angle;
+
+  const _SpriteWidget({
     required this.sprite,
     this.anchor = Anchor.topLeft,
+    this.angle = 0,
   });
 
   @override
   Widget build(_) {
     return Container(
-      child: CustomPaint(painter: _SpritePainter(sprite, anchor)),
+      child: CustomPaint(painter: SpritePainter(sprite, anchor, angle: angle)),
     );
-  }
-}
-
-class _SpritePainter extends CustomPainter {
-  final Sprite _sprite;
-  final Anchor _anchor;
-
-  _SpritePainter(this._sprite, this._anchor);
-
-  @override
-  bool shouldRepaint(_SpritePainter old) {
-    return old._sprite != _sprite || old._anchor != _anchor;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final widthRate = size.width / _sprite.srcSize.x;
-    final heightRate = size.height / _sprite.srcSize.y;
-    final rate = min(widthRate, heightRate);
-
-    final paintSize = _sprite.srcSize * rate;
-    final anchorPosition = _anchor.toVector2();
-    final anchoredPosition = size.toVector2()..multiply(anchorPosition);
-    final delta = (anchoredPosition - paintSize)..multiply(anchorPosition);
-
-    canvas.translate(delta.x, delta.y);
-    _sprite.render(canvas, size: paintSize);
   }
 }

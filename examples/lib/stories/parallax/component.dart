@@ -2,26 +2,26 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/parallax.dart';
 
-class ComponentParallaxGame extends BaseGame {
+class ComponentParallaxGame extends FlameGame {
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     add(MyParallaxComponent());
   }
 }
 
-class MyParallaxComponent extends ParallaxComponent
-    with HasGameRef<ComponentParallaxGame> {
+class MyParallaxComponent extends ParallaxComponent<ComponentParallaxGame> {
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     parallax = await gameRef.loadParallax(
       [
-        'parallax/bg.png',
-        'parallax/mountain-far.png',
-        'parallax/mountains.png',
-        'parallax/trees.png',
-        'parallax/foreground-trees.png',
+        ParallaxImageData('parallax/bg.png'),
+        ParallaxImageData('parallax/mountain-far.png'),
+        ParallaxImageData('parallax/mountains.png'),
+        ParallaxImageData('parallax/trees.png'),
+        ParallaxImageData('parallax/foreground-trees.png'),
       ],
-      size,
       baseVelocity: Vector2(20, 0),
       velocityMultiplierDelta: Vector2(1.8, 1.0),
     );

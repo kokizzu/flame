@@ -1,11 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flame/extensions.dart';
+import 'package:flame_test/flame_test.dart';
 import 'package:test/test.dart';
-
-void expectDouble(double d1, double d2) {
-  expect((d1 - d2).abs() <= 0.0001, true);
-}
 
 void main() {
   group('Vector2 test', () {
@@ -100,6 +97,7 @@ void main() {
       expectDouble(p2.length, math.sqrt(2));
       expect(p2.x, p2.y);
     });
+
     test('moveToTarget - fully horizontal', () {
       final current = Vector2(10.0, 0.0);
       final target = Vector2(20.0, 0.0);
@@ -116,6 +114,7 @@ void main() {
       current.moveToTarget(target, 5);
       expect(current, Vector2(20.0, 0.0));
     });
+
     test('moveToTarget - fully vertical', () {
       final current = Vector2(10.0, 0.0);
       final target = Vector2(10.0, 100.0);
@@ -132,6 +131,7 @@ void main() {
       current.moveToTarget(target, 19);
       expect(current, Vector2(10.0, 100.0));
     });
+
     test('moveToTarget - arbitrary direction', () {
       final current = Vector2(2.0, 2.0);
       final target = Vector2(4.0, 6.0); // direction is 1,2
@@ -144,6 +144,68 @@ void main() {
 
       current.moveToTarget(target, math.sqrt(5));
       expect(current, Vector2(4.0, 6.0));
+    });
+
+    test('rotate - no center defined', () {
+      final position = Vector2(0.0, 1.0);
+      position.rotate(-math.pi / 2);
+      expectVector2(position, Vector2(1.0, 0.0));
+    });
+
+    test('rotate - no center defined, negative position', () {
+      final position = Vector2(0.0, -1.0);
+      position.rotate(-math.pi / 2);
+      expectVector2(position, Vector2(-1.0, 0.0));
+    });
+
+    test('rotate - with center defined', () {
+      final position = Vector2(0.0, 1.0);
+      final center = Vector2(1.0, 1.0);
+      position.rotate(-math.pi / 2, center: center);
+      expectVector2(position, Vector2(1.0, 2.0));
+    });
+
+    test('rotate - with positive direction', () {
+      final position = Vector2(0.0, 1.0);
+      final center = Vector2(1.0, 1.0);
+      position.rotate(math.pi / 2, center: center);
+      expectVector2(position, Vector2(1.0, 0.0));
+    });
+
+    test('rotate - with a negative y position', () {
+      final position = Vector2(2.0, -3.0);
+      final center = Vector2(1.0, 1.0);
+      position.rotate(math.pi / 2, center: center);
+      expectVector2(position, Vector2(5.0, 2.0));
+    });
+
+    test('rotate - with a negative x position', () {
+      final position = Vector2(-2.0, 3.0);
+      final center = Vector2(1.0, 1.0);
+      position.rotate(math.pi / 2, center: center);
+      expectVector2(position, Vector2(-1.0, -2.0));
+    });
+
+    test('rotate - with a negative position', () {
+      final position = Vector2(-2.0, -3.0);
+      final center = Vector2(1.0, 0.0);
+      position.rotate(math.pi / 2, center: center);
+      expectVector2(position, Vector2(4.0, -3.0));
+    });
+
+    test('screenAngle', () {
+      // Up
+      final position = Vector2(0.0, -1.0);
+      expectDouble(position.screenAngle(), 0.0);
+      // Down
+      position.setValues(0.0, 1.0);
+      expectDouble(position.screenAngle().abs(), math.pi);
+      // Left
+      position.setValues(-1.0, 0.0);
+      expectDouble(position.screenAngle(), -math.pi / 2);
+      // Right
+      position.setValues(1.0, 0.0);
+      expectDouble(position.screenAngle(), math.pi / 2);
     });
   });
 }

@@ -34,9 +34,19 @@ extension Vector2Extension on Vector2 {
     setFrom(this + (to - this) * t);
   }
 
+  /// Whether the [Vector2] is the zero vector or not
+  bool isZero() => x == 0 && y == 0;
+
   /// Rotates the [Vector2] with [angle] in radians
   /// rotates around [center] if it is defined
+  /// In a screen coordinate system (where the y-axis is flipped) it rotates in
+  /// a clockwise fashion
+  /// In a normal coordinate system it rotates in a counter-clockwise fashion
   void rotate(double angle, {Vector2? center}) {
+    if (isZero() || angle == 0) {
+      // No point in rotating the zero vector or to rotate with 0 as angle
+      return;
+    }
     if (center == null) {
       setValues(
         x * cos(angle) - y * sin(angle),
@@ -50,9 +60,11 @@ extension Vector2Extension on Vector2 {
     }
   }
 
-  /// Changes the [length] of the vector to the length provided, without changing direction.
+  /// Changes the [length] of the vector to the length provided, without
+  /// changing direction.
   ///
-  /// If you try to scale the zero (empty) vector, it will remain unchanged, and no error will be thrown.
+  /// If you try to scale the zero (empty) vector, it will remain unchanged, and
+  /// no error will be thrown.
   void scaleTo(double newLength) {
     final l = length;
     if (l != 0) {
@@ -83,9 +95,28 @@ extension Vector2Extension on Vector2 {
     }
   }
 
+  /// Signed angle in a coordinate system where the Y-axis is flipped.
+  ///
+  /// Since on a canvas/screen y is smaller the further up you go, instead of
+  /// larger like on a normal coordinate system, to get an angle that is in that
+  /// coordinate system we have to flip the Y-axis of the [Vector].
+  ///
+  /// Example:
+  /// Up: Vector(0.0, -1.0).screenAngle == 0
+  /// Down: Vector(0.0, 1.0).screenAngle == +-pi
+  /// Left: Vector(-1.0, 0.0).screenAngle == -pi/2
+  /// Right: Vector(-1.0, 0.0).screenAngle == pi/2
+  double screenAngle() => (clone()..y *= -1).angleToSigned(Vector2(0.0, 1.0));
+
   /// Modulo/Remainder
   Vector2 operator %(Vector2 mod) => Vector2(x % mod.x, y % mod.y);
 
   /// Create a Vector2 with ints as input
   static Vector2 fromInts(int x, int y) => Vector2(x.toDouble(), y.toDouble());
+
+  /// Creates a heading [Vector2] with the given angle in radians.
+  static Vector2 fromRadians(double r) => Vector2.zero()..rotate(r);
+
+  /// Creates a heading [Vector2] with the given angle in degrees.
+  static Vector2 fromDegrees(double d) => fromRadians(d * degrees2Radians);
 }

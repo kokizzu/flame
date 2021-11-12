@@ -180,8 +180,8 @@ images, each at their own position, onto a new image:
 final composition = ImageComposition()
   ..add(image1, Vector2(0, 0))
   ..add(image2, Vector2(64, 0));
-  ..add(image3, 
-    Vector2(128, 0), 
+  ..add(image3,
+    Vector2(128, 0),
     source: Rect.fromLTWH(32, 32, 64, 64),
   );
 
@@ -214,7 +214,7 @@ svgInstance.renderPosition(canvas, position, size);
 or use the [SvgComponent]:
 
 ```dart
-class MyGame extends BaseGame {
+class MyGame extends FlameGame {
     Future<void> onLoad() async {
       final svgInstance = await Svg.load('android.svg');
       final size = Vector2.all(100);
@@ -345,7 +345,7 @@ class MyGame extends Game {
 }
 ```
 
-FlareAnimations are normally used inside `FlareComponent`s, that way `BaseGame` will handle calling
+FlareAnimations are normally used inside `FlareComponent`s, that way `FlameGame` will handle calling
 `render` and `update` automatically.
 
 You can see a full example of how to use Flare together with Flame in the example
@@ -389,7 +389,7 @@ data on the web this method can be used as a replacement for `dart-ui decodeImag
 ```dart
 Image image = await Flame.images.decodeImageFromPixels(
   data, // A Uint8List containing pixel data in the RGBA format.
-  200, 
+  200,
   200,
 );
 ```

@@ -6,27 +6,26 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart' hide WidgetBuilder;
 
 import '../extensions/size.dart';
-import 'game.dart';
 import 'game_loop.dart';
+import 'mixins/game.dart';
 
 // ignore: prefer_mixin
 class GameRenderBox extends RenderBox with WidgetsBindingObserver {
   BuildContext buildContext;
   Game game;
-  late GameLoop gameLoop;
+  GameLoop? gameLoop;
 
   GameRenderBox(this.buildContext, this.game) {
-    gameLoop = GameLoop(gameLoopCallback);
     WidgetsBinding.instance!.addTimingsCallback(game.onTimingsCallback);
   }
 
   @override
-  bool get sizedByParent => true;
+  bool get isRepaintBoundary => true;
 
   @override
   void performResize() {
     super.performResize();
-    game.onResize(constraints.biggest.toVector2());
+    game.onGameResize(constraints.biggest.toVector2());
   }
 
   @override
@@ -34,10 +33,12 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
     super.attach(owner);
     game.attach(owner, this);
 
+    final gameLoop = this.gameLoop = GameLoop(gameLoopCallback);
+
     game.pauseEngineFn = gameLoop.pause;
     game.resumeEngineFn = gameLoop.resume;
 
-    if (game.runOnCreation) {
+    if (!game.paused) {
       gameLoop.start();
     }
 
@@ -48,7 +49,8 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
   void detach() {
     super.detach();
     game.detach();
-    gameLoop.stop();
+    gameLoop?.dispose();
+    gameLoop = null;
     _unbindLifecycleListener();
   }
 
@@ -58,6 +60,11 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
     }
     game.update(dt);
     markNeedsPaint();
+  }
+
+  @override
+  void performLayout() {
+    size = constraints.biggest;
   }
 
   @override
@@ -81,6 +88,6 @@ class GameRenderBox extends RenderBox with WidgetsBindingObserver {
     game.lifecycleStateChange(state);
   }
 
-  // ignore: annotate_overrides
+  @override
   Size computeDryLayout(BoxConstraints constraints) => constraints.biggest;
 }

@@ -1,28 +1,29 @@
 import 'package:flame/components.dart';
+import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/parallax.dart';
-import 'package:flame/extensions.dart';
 import 'package:flutter/material.dart';
 
 /// This examples serves to test the Parallax feature outside of the
 /// Flame Component System (FCS), use the other files in this folder
 /// for examples on how to use parallax with FCS
-/// FCS is only used when you extend BaseGame, not Game,
+/// FCS is only used when you extend FlameGame, not Game,
 /// like we do in this example.
-class NoFCSParallaxGame extends Game {
+class NoFCSParallaxGame with Loadable, Game {
   late Parallax parallax;
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     parallax = await loadParallax(
       [
-        'parallax/bg.png',
-        'parallax/mountain-far.png',
-        'parallax/mountains.png',
-        'parallax/trees.png',
-        'parallax/foreground-trees.png',
+        ParallaxImageData('parallax/bg.png'),
+        ParallaxImageData('parallax/mountain-far.png'),
+        ParallaxImageData('parallax/mountains.png'),
+        ParallaxImageData('parallax/trees.png'),
+        ParallaxImageData('parallax/foreground-trees.png'),
       ],
-      size,
+      size: size,
       baseVelocity: Vector2(20, 0),
       velocityMultiplierDelta: Vector2(1.8, 1.0),
     );

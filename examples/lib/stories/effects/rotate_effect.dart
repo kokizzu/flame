@@ -3,25 +3,24 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
-import 'package:flame/gestures.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 
 import '../../commons/square_component.dart';
 
-class RotateEffectGame extends BaseGame with TapDetector {
+class RotateEffectGame extends FlameGame with TapDetector {
   late SquareComponent square;
 
   @override
   Future<void> onLoad() async {
-    square = SquareComponent()
-      ..position.setValues(200, 200)
-      ..anchor = Anchor.center;
+    await super.onLoad();
+    square = SquareComponent(position: Vector2.all(200));
     add(square);
   }
 
   @override
   void onTap() {
-    square.addEffect(
+    square.add(
       RotateEffect(
         angle: 2 * pi,
         isRelative: true,

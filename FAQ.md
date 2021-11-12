@@ -54,29 +54,29 @@ However there is another
 root which showcases most of the features that exist in Flame.
 
 If you want a more full-fledged game, please check:
- - [BGUG](https://github.com/fireslime/bgug): FireSlime's open source fast paced side-scrolling
+ - [BGUG](https://github.com/bluefireteam/bgug): Blue Fire's open source fast paced side-scrolling
  platformer. It is mostly up-to-date with Flame and uses a good chunk of the features offered by the
  engine.
  - [renancaraujo](https://github.com/renancaraujo)'s port of the
  [trex](https://github.com/flame-engine/trex-flame) Chrome game in Flame
- - [Bob Box](https://github.com/fireslime/bounce_box): which is easy to grasp and a good display of
+ - [Bob Box](https://github.com/bluefireteam/bounce_box): which is easy to grasp and a good display of
  our core features.
 
-## What is the difference between Game and BaseGame?
+## What is the difference between Game and FlameGame?
 
-`Game` is the most barebone interface that Flame exposes. If you extend `Game` instead of `BaseGame`
+`Game` is the most barebone interface that Flame exposes. If you extend `Game` instead of `FlameGame`
 , you will need to implement a lot of things yourself. Flame will hook you up on the game loop, so
 you will have to implement `render` and `update` yourself from scratch. If you want to use the
 component system, you can, but you don't need to.
 
-`BaseGame` extends `Game` and adds lots of functionality on top of that. Just add your components to
+`FlameGame` extends `Game` and adds lots of functionality on top of that. Just add your components to
 it and it works. They are rendered and updated automatically. You might still want to override some
-of `BaseGame`'s methods to add custom functionality, but you will probably be calling the super
-method to let `BaseGame` do its work.
+of `FlameGame`'s methods to add custom functionality, but you will probably be calling the super
+method to let `FlameGame` do its work.
 
 ## How does the Camera work?
 
-If you are using `BaseGame`, you have a `camera` attribute that allows you to off-set all non-HUD
+If you are using `FlameGame`, you have a `camera` attribute that allows you to off-set all non-HUD
 components by a certain amount. You can add custom logic to your `update` method to have the camera
 position be tracked based on the player position, for example, so the player can be always on the
 center or on the bottom.
@@ -90,9 +90,11 @@ published via FireSlime.
 
 You can always use all the Widgets and features that Flutter already provide, but Flame wraps
 the gesture detector callbacks on its base Game class so it can be a little easier to handle those
-events, you can find more about it on the input documentation page:
+events, you can find more about it on our docs:
 
-https://flame-engine.org/docs/#/input
+ * [Gesture/Mouse](https://docs.flame-engine.org/main/gesture-input.html)
+ * [Keyboard](https://docs.flame-engine.org/main/keyboard-input.html)
+ * [Other](https://docs.flame-engine.org/main/other-inputs.html)
 
 ## Other questions?
 

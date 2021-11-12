@@ -1,17 +1,19 @@
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:flame/parallax.dart';
 
-class BasicParallaxGame extends BaseGame {
+class BasicParallaxGame extends FlameGame {
   final _imageNames = [
-    'parallax/bg.png',
-    'parallax/mountain-far.png',
-    'parallax/mountains.png',
-    'parallax/trees.png',
-    'parallax/foreground-trees.png',
+    ParallaxImageData('parallax/bg.png'),
+    ParallaxImageData('parallax/mountain-far.png'),
+    ParallaxImageData('parallax/mountains.png'),
+    ParallaxImageData('parallax/trees.png'),
+    ParallaxImageData('parallax/foreground-trees.png'),
   ];
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     final parallax = await loadParallaxComponent(
       _imageNames,
       baseVelocity: Vector2(20, 0),

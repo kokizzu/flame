@@ -1,26 +1,31 @@
 import '../../../components.dart';
-import '../../game/game.dart';
+import '../../../game.dart';
 
-mixin HasGameRef<T extends Game> {
+mixin HasGameRef<T extends FlameGame> on Component {
   T? _gameRef;
 
   T get gameRef {
-    final ref = _gameRef;
-    if (ref == null) {
-      throw 'Accessing gameRef before the component was added to the game!';
+    if (_gameRef == null) {
+      var c = parent;
+      while (c != null) {
+        if (c is HasGameRef<T>) {
+          _gameRef = c.gameRef;
+          return _gameRef!;
+        } else if (c is T) {
+          _gameRef = c;
+          return c;
+        } else {
+          c = c.parent;
+        }
+      }
+      throw StateError('Cannot find reference $T in the component tree');
     }
-    return ref;
+    return _gameRef!;
   }
 
-  bool get hasGameRef => _gameRef != null;
-
-  set gameRef(T gameRef) {
-    _gameRef = gameRef;
-    if (this is BaseComponent) {
-      (this as BaseComponent)
-          .children
-          .whereType<HasGameRef<T>>()
-          .forEach((e) => e.gameRef = gameRef);
-    }
+  @override
+  void onRemove() {
+    super.onRemove();
+    _gameRef = null;
   }
 }

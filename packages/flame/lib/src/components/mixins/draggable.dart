@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../../extensions.dart';
-import '../../game/base_game.dart';
+import '../../../components.dart';
+import '../../game/flame_game.dart';
 import '../../gestures/events.dart';
-import '../base_component.dart';
 
-mixin Draggable on BaseComponent {
-  bool onDragStart(int pointerId, Vector2 startPosition) {
+mixin Draggable on Component {
+  bool _isDragged = false;
+  bool get isDragged => _isDragged;
+
+  bool onDragStart(int pointerId, DragStartInfo info) {
     return true;
   }
 
-  bool onDragUpdate(int pointerId, DragUpdateInfo details) {
+  bool onDragUpdate(int pointerId, DragUpdateInfo info) {
     return true;
   }
 
-  bool onDragEnd(int pointerId, DragEndInfo details) {
+  bool onDragEnd(int pointerId, DragEndInfo info) {
     return true;
   }
 
@@ -25,10 +27,11 @@ mixin Draggable on BaseComponent {
   final List<int> _currentPointerIds = [];
   bool _checkPointerId(int pointerId) => _currentPointerIds.contains(pointerId);
 
-  bool handleDragStart(int pointerId, Vector2 startPosition) {
-    if (containsPoint(startPosition)) {
+  bool handleDragStart(int pointerId, DragStartInfo info) {
+    if (containsPoint(eventPosition(info))) {
+      _isDragged = true;
       _currentPointerIds.add(pointerId);
-      return onDragStart(pointerId, startPosition);
+      return onDragStart(pointerId, info);
     }
     return true;
   }
@@ -42,6 +45,7 @@ mixin Draggable on BaseComponent {
 
   bool handleDragEnded(int pointerId, DragEndInfo details) {
     if (_checkPointerId(pointerId)) {
+      _isDragged = false;
       _currentPointerIds.remove(pointerId);
       return onDragEnd(pointerId, details);
     }
@@ -50,17 +54,32 @@ mixin Draggable on BaseComponent {
 
   bool handleDragCanceled(int pointerId) {
     if (_checkPointerId(pointerId)) {
+      _isDragged = false;
       _currentPointerIds.remove(pointerId);
       return handleDragCanceled(pointerId);
     }
     return true;
   }
+
+  @override
+  @mustCallSuper
+  void prepare(Component component) {
+    super.prepare(component);
+    if (isPrepared) {
+      final parentGame = findParent<FlameGame>();
+      assert(
+        parentGame is HasDraggableComponents,
+        'Draggable Components can only be added to a FlameGame with '
+        'HasDraggableComponents',
+      );
+    }
+  }
 }
 
-mixin HasDraggableComponents on BaseGame {
+mixin HasDraggableComponents on FlameGame {
   @mustCallSuper
-  void onDragStart(int pointerId, Vector2 startPosition) {
-    _onGenericEventReceived((c) => c.handleDragStart(pointerId, startPosition));
+  void onDragStart(int pointerId, DragStartInfo info) {
+    _onGenericEventReceived((c) => c.handleDragStart(pointerId, info));
   }
 
   @mustCallSuper
@@ -79,11 +98,8 @@ mixin HasDraggableComponents on BaseGame {
   }
 
   void _onGenericEventReceived(bool Function(Draggable) handler) {
-    for (final c in components.toList().reversed) {
-      var shouldContinue = true;
-      if (c is BaseComponent) {
-        shouldContinue = c.propagateToChildren<Draggable>(handler);
-      }
+    for (final c in children.reversed()) {
+      var shouldContinue = c.propagateToChildren<Draggable>(handler);
       if (c is Draggable && shouldContinue) {
         shouldContinue = handler(c);
       }

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:meta/meta.dart';
 
+import '../../components.dart';
 import '../extensions/vector2.dart';
 import '../nine_tile_box.dart';
 import 'position_component.dart';
@@ -19,12 +20,22 @@ class NineTileBoxComponent extends PositionComponent {
     this.nineTileBox, {
     Vector2? position,
     Vector2? size,
-  }) : super(position: position, size: size);
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
+  }) : super(
+          position: position,
+          size: size,
+          scale: scale,
+          angle: angle,
+          anchor: anchor,
+          priority: priority,
+        );
 
   @mustCallSuper
   @override
   void render(Canvas c) {
-    super.render(c);
     nineTileBox.drawRect(c, size.toRect());
   }
 }

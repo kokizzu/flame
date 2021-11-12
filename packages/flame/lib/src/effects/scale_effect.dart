@@ -6,52 +6,57 @@ import '../../components.dart';
 import '../extensions/vector2.dart';
 import 'effects.dart';
 
-class ScaleEffect extends SimplePositionComponentEffect {
-  Vector2 size;
-  late Vector2 _startSize;
+class ScaleEffect extends PositionComponentEffect {
+  Vector2 scale;
   late Vector2 _delta;
 
   /// Duration or speed needs to be defined
   ScaleEffect({
-    required this.size,
+    required this.scale,
     double? duration, // How long it should take for completion
     double? speed, // The speed of the scaling in pixels per second
     Curve? curve,
     bool isInfinite = false,
     bool isAlternating = false,
     bool isRelative = false,
+    double? initialDelay,
+    double? peakDelay,
+    bool? removeOnFinish,
     VoidCallback? onComplete,
-  })  : assert(
-          duration != null || speed != null,
-          'Either speed or duration necessary',
-        ),
-        super(
+  }) : super(
           isInfinite,
           isAlternating,
           duration: duration,
           speed: speed,
           curve: curve,
           isRelative: isRelative,
-          modifiesSize: true,
+          modifiesScale: true,
+          initialDelay: initialDelay,
+          peakDelay: peakDelay,
+          removeOnFinish: removeOnFinish,
           onComplete: onComplete,
         );
 
   @override
-  void initialize(PositionComponent component) {
-    super.initialize(component);
-    _startSize = component.size.clone();
-    _delta = isRelative ? size : size - _startSize;
-    if (!isAlternating) {
-      endSize = _startSize + _delta;
-    }
+  Future<void> onLoad() async {
+    super.onLoad();
+    final startScale = originalScale!;
+    _delta = isRelative ? scale : scale - startScale;
+    peakScale = startScale + _delta;
     speed ??= _delta.length / duration!;
     duration ??= _delta.length / speed!;
-    peakTime = isAlternating ? duration! / 2 : duration!;
+    setPeakTimeFromDuration(duration!);
   }
 
   @override
   void update(double dt) {
+    if (isPaused) {
+      return;
+    }
     super.update(dt);
-    component?.size.setFrom(_startSize + _delta * curveProgress);
+    if (hasCompleted()) {
+      return;
+    }
+    affectedParent.scale.setFrom(originalScale! + _delta * curveProgress);
   }
 }

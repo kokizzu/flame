@@ -1,13 +1,20 @@
 import 'dart:math';
-import 'dart:ui';
+import 'dart:ui' hide Canvas;
 
+import '../../game.dart';
 import '../../geometry.dart';
+import '../components/cache/value_cache.dart';
+import '../extensions/canvas.dart';
 import '../extensions/rect.dart';
 import '../extensions/vector2.dart';
 import 'shape.dart';
 
 class Polygon extends Shape {
   final List<Vector2> normalizedVertices;
+  // These lists are used to minimize the amount of [Vector2] objects that are
+  // created, only change them if the cache is deemed invalid
+  late final List<Vector2> _sizedVertices;
+  late final List<Vector2> _hitboxVertices;
 
   /// With this constructor you create your [Polygon] from positions in your
   /// intended space. It will automatically calculate the [size] and center
@@ -51,59 +58,82 @@ class Polygon extends Shape {
     Vector2? position,
     Vector2? size,
     double? angle,
-  }) : super(position: position, size: size, angle: angle ?? 0);
+  }) : super(
+          position: position,
+          size: size,
+          angle: angle ?? 0,
+        ) {
+    _sizedVertices =
+        normalizedVertices.map((_) => Vector2.zero()).toList(growable: false);
+    _hitboxVertices =
+        normalizedVertices.map((_) => Vector2.zero()).toList(growable: false);
+  }
 
-  final _cachedScaledShape = ShapeCache<Iterable<Vector2>>();
+  final _cachedScaledShape = ValueCache<Iterable<Vector2>>();
 
   /// Gives back the shape vectors multiplied by the size
   Iterable<Vector2> scaled() {
     if (!_cachedScaledShape.isCacheValid([size])) {
-      _cachedScaledShape.updateCache(
-        normalizedVertices.map((p) => p.clone()..multiply(size! / 2)),
-        [size!.clone()],
-      );
+      for (var i = 0; i < _sizedVertices.length; i++) {
+        final point = normalizedVertices[i];
+        (_sizedVertices[i]..setFrom(point)).multiply(halfSize);
+      }
+      _cachedScaledShape.updateCache(_sizedVertices, [size.clone()]);
     }
     return _cachedScaledShape.value!;
   }
 
-  final _cachedRenderPath = ShapeCache<Path>();
+  final _cachedRenderPath = ValueCache<Path>();
 
   @override
   void render(Canvas canvas, Paint paint) {
-    if (!_cachedRenderPath.isCacheValid([position, size])) {
+    if (!_cachedRenderPath
+        .isCacheValid([offsetPosition, relativeOffset, size, angle])) {
+      final center = localCenter;
       _cachedRenderPath.updateCache(
         Path()
           ..addPolygon(
-            scaled()
-                .map((point) => (point +
-                        (position + size! / 2) +
-                        ((size! / 2)..multiply(relativePosition)))
-                    .toOffset())
-                .toList(),
+            scaled().map(
+              (point) {
+                final pathPoint = center + point;
+                if (!isCanvasPrepared) {
+                  pathPoint.rotate(angle, center: center);
+                }
+                return pathPoint.toOffset();
+              },
+            ).toList(),
             true,
           ),
         [
-          position.clone(),
-          size!.clone(),
+          offsetPosition.clone(),
+          relativeOffset.clone(),
+          size.clone(),
+          angle,
         ],
       );
     }
     canvas.drawPath(_cachedRenderPath.value!, paint);
   }
 
-  final _cachedHitbox = ShapeCache<List<Vector2>>();
+  final _cachedHitbox = ValueCache<List<Vector2>>();
 
   /// Gives back the vertices represented as a list of points which
   /// are the "corners" of the hitbox rotated with [angle].
   List<Vector2> hitbox() {
     // Use cached bounding vertices if state of the component hasn't changed
-    if (!_cachedHitbox.isCacheValid([shapeCenter, size, angle])) {
+    if (!_cachedHitbox
+        .isCacheValid([absoluteCenter, size, parentAngle, angle])) {
+      final scaledVertices = scaled().toList(growable: false);
+      final center = absoluteCenter;
+      for (var i = 0; i < _hitboxVertices.length; i++) {
+        _hitboxVertices[i]
+          ..setFrom(center)
+          ..add(scaledVertices[i])
+          ..rotate(parentAngle + angle, center: center);
+      }
       _cachedHitbox.updateCache(
-        scaled()
-            .map((point) =>
-                (point + shapeCenter)..rotate(angle, center: anchorPosition))
-            .toList(growable: false),
-        [shapeCenter, size!.clone(), angle],
+        _hitboxVertices,
+        [absoluteCenter, size.clone(), parentAngle, angle],
       );
     }
     return _cachedHitbox.value!;
@@ -114,7 +144,7 @@ class Polygon extends Shape {
   @override
   bool containsPoint(Vector2 point) {
     // If the size is 0 then it can't contain any points
-    if (size!.x == 0 || size!.y == 0) {
+    if (size.x == 0 || size.y == 0) {
       return false;
     }
 

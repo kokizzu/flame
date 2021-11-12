@@ -4,41 +4,51 @@ import 'dart:ui';
 import 'package:flutter/painting.dart';
 import 'package:meta/meta.dart';
 
+import '../../components.dart';
+import '../../game.dart';
 import '../assets/images.dart';
 import '../extensions/vector2.dart';
-import '../game/game.dart';
 import '../parallax.dart';
 import 'position_component.dart';
 
-extension ParallaxComponentExtension on Game {
+extension ParallaxComponentExtension on FlameGame {
   Future<ParallaxComponent> loadParallaxComponent(
-    List<String> paths, {
-    Vector2? size,
+    List<ParallaxData> dataList, {
     Vector2? baseVelocity,
     Vector2? velocityMultiplierDelta,
     ImageRepeat repeat = ImageRepeat.repeatX,
     Alignment alignment = Alignment.bottomLeft,
     LayerFill fill = LayerFill.height,
+    Vector2? position,
+    Vector2? size,
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
   }) async {
-    final componentSize = size ?? this.size;
-    final component = await ParallaxComponent.load(
-      paths,
-      size: componentSize,
+    return ParallaxComponent.load(
+      dataList,
       baseVelocity: baseVelocity,
       velocityMultiplierDelta: velocityMultiplierDelta,
       repeat: repeat,
       alignment: alignment,
       fill: fill,
       images: images,
+      position: position,
+      size: size,
+      scale: scale,
+      angle: angle,
+      anchor: anchor,
+      priority: priority,
     );
-
-    return component..size.setFrom(componentSize);
   }
 }
 
 /// A full parallax, several layers of images drawn out on the screen and each
 /// layer moves with different velocities to give an effect of depth.
-class ParallaxComponent extends PositionComponent {
+class ParallaxComponent<T extends FlameGame> extends PositionComponent
+    with HasGameRef<T> {
+  bool isFullscreen = true;
   Parallax? _parallax;
 
   Parallax? get parallax => _parallax;
@@ -51,21 +61,50 @@ class ParallaxComponent extends PositionComponent {
   ParallaxComponent({
     Vector2? position,
     Vector2? size,
-  }) : super(position: position, size: size);
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
+  })  : isFullscreen = size == null ? true : false,
+        super(
+          position: position,
+          size: size,
+          scale: scale,
+          angle: angle,
+          anchor: anchor,
+          priority: priority,
+        );
 
   /// Creates a component from a [Parallax] object.
-  ParallaxComponent.fromParallax(
-    this._parallax, {
+  factory ParallaxComponent.fromParallax(
+    Parallax parallax, {
     Vector2? position,
     Vector2? size,
-  }) : super(position: position, size: size);
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
+  }) {
+    return ParallaxComponent(
+      position: position,
+      size: size ?? (parallax.isSized ? parallax.size : null),
+      scale: scale,
+      angle: angle,
+      anchor: anchor,
+      priority: priority,
+    )..parallax = parallax;
+  }
 
   @mustCallSuper
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    this.size.setFrom(size);
-    parallax?.resize(size);
+    if (!isFullscreen) {
+      return;
+    }
+    final newSize = gameRef.camera.viewport.effectiveSize;
+    this.size.setFrom(newSize);
+    parallax?.resize(newSize);
   }
 
   @override
@@ -77,7 +116,6 @@ class ParallaxComponent extends PositionComponent {
   @mustCallSuper
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
     parallax?.render(canvas);
   }
 
@@ -86,8 +124,9 @@ class ParallaxComponent extends PositionComponent {
   /// and filled), otherwise load the [ParallaxLayer]s individually and use the
   /// normal constructor.
   ///
-  /// [load] takes a list of paths to all the images and a size that you want to use in the
+  /// [load] takes a list of [ParallaxData] of all the images and a size that you want to use in the
   /// parallax.
+  ///
   /// Optionally arguments for the [baseVelocity] and [velocityMultiplierDelta] can be passed
   /// in, [baseVelocity] defines what the base velocity of the layers should be
   /// and [velocityMultiplierDelta] defines how the velocity should change the
@@ -97,21 +136,27 @@ class ParallaxComponent extends PositionComponent {
   /// which edge it should align with ([alignment]), which axis it should fill
   /// the image on ([fill]) and [images] which is the image cache that should be
   /// used can also be passed in.
+  ///
   /// If no image cache is set, the global flame cache is used.
   static Future<ParallaxComponent> load(
-    List<String> paths, {
-    Vector2? size,
+    List<ParallaxData> dataList, {
     Vector2? baseVelocity,
     Vector2? velocityMultiplierDelta,
     ImageRepeat repeat = ImageRepeat.repeatX,
     Alignment alignment = Alignment.bottomLeft,
     LayerFill fill = LayerFill.height,
     Images? images,
+    Vector2? position,
+    Vector2? size,
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
   }) async {
-    final component = ParallaxComponent.fromParallax(
+    return ParallaxComponent.fromParallax(
       await Parallax.load(
-        paths,
-        size,
+        dataList,
+        size: size,
         baseVelocity: baseVelocity,
         velocityMultiplierDelta: velocityMultiplierDelta,
         repeat: repeat,
@@ -119,12 +164,12 @@ class ParallaxComponent extends PositionComponent {
         fill: fill,
         images: images,
       ),
+      position: position,
+      size: size,
+      scale: scale,
+      angle: angle,
+      anchor: anchor,
+      priority: priority,
     );
-
-    if (size != null) {
-      component.size.setFrom(size);
-    }
-
-    return component;
   }
 }

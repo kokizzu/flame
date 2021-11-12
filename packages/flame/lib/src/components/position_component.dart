@@ -1,125 +1,374 @@
+import 'dart:math' as math;
 import 'dart:ui' hide Offset;
+
+import 'package:meta/meta.dart';
 
 import '../anchor.dart';
 import '../extensions/offset.dart';
 import '../extensions/rect.dart';
 import '../extensions/vector2.dart';
-import '../geometry/rectangle.dart';
-import 'base_component.dart';
+import '../game/notifying_vector2.dart';
+import '../game/transform2d.dart';
 import 'component.dart';
-import 'mixins/hitbox.dart';
 
-/// A [Component] implementation that represents a component that has a
-/// specific, possibly dynamic position on the screen.
+/// A [Component] implementation that represents an object that can be
+/// freely moved around the screen, rotated, and scaled.
 ///
-/// It represents a rectangle of dimension [size], on the [position],
-/// rotated around its [anchor] with angle [angle].
+/// The [PositionComponent] class has no visual representation of its own
+/// (except in debug mode). It is common, therefore, to derive from this
+/// class, implementing a specific rendering logic. For example:
+/// ```dart
+/// class MyCircle extends PositionComponent {
+///   MyCircle({required double radius, Paint? paint, Vector2? position})
+///     : _radius = radius,
+///       _paint = paint ?? Paint()..color=Color(0xFF80C080),
+///       super(
+///         position: position,
+///         size: Vector2.all(2 * radius),
+///         anchor: Anchor.center,
+///       );
 ///
-/// It also uses the [anchor] property to properly position itself.
+///   double _radius;
+///   Paint _paint;
 ///
-/// A [PositionComponent] can have children. The children are all updated and
-/// rendered automatically when this is updated and rendered.
-/// They are translated by this component's (x,y). They do not need to fit
-/// within this component's (width, height).
-abstract class PositionComponent extends BaseComponent {
-  /// The position of this component on the screen (relative to the anchor).
-  final Vector2 _position;
-  Vector2 get position => _position;
-  set position(Vector2 position) => _position.setFrom(position);
+///   @override
+///   void render(Canvas canvas) {
+///     super.render(canvas);
+///     canvas.drawCircle(Offset(_radius, _radius), _radius, _paint);
+///   }
+/// }
+/// ```
+///
+/// The base [PositionComponent] class can also be used as a container
+/// for several other components. In this case, changing the position,
+/// rotating or scaling the [PositionComponent] will affect the whole
+/// group as if it was a single entity.
+///
+/// The main properties of this class is the [transform] (which combines
+/// the [position], [angle] of rotation, and [scale]), the [size], and
+/// the [anchor]. Thus, the [PositionComponent] can be imagined as an
+/// abstract picture whose of a certain [size]. Within that picture
+/// a point at location [anchor] is selected, and that point is designated as
+/// a "logical center" of the picture. Then, a sequence of transforms is
+/// applied: the picture is moved so that the anchor becomes at point
+/// [position] on the screen, then the picture is rotated for [angle]
+/// radians around the anchor point, and finally scaled by [scale] also
+/// around the anchor point.
+///
+/// The [size] property of the [PositionComponent] is used primarily for
+/// tap and collision detection. Thus, the [size] should be set equal to
+/// the approximate bounding rectangle of the rendered picture. If you
+/// do not specify the size of a PositionComponent, then it will be
+/// equal to zero and the component won't be able to respond to taps.
+class PositionComponent extends Component {
+  PositionComponent({
+    Vector2? position,
+    Vector2? size,
+    Vector2? scale,
+    double? angle,
+    Anchor? anchor,
+    int? priority,
+  })  : transform = Transform2D(),
+        _anchor = anchor ?? Anchor.topLeft,
+        _size = NotifyingVector2.copy(size ?? Vector2.zero()),
+        super(priority: priority) {
+    if (position != null) {
+      transform.position = position;
+    }
+    if (angle != 0) {
+      transform.angle = angle ?? 0;
+    }
+    if (scale != null) {
+      transform.scale = scale;
+    }
+    _size.addListener(_onModifiedSizeOrAnchor);
+    _onModifiedSizeOrAnchor();
+  }
 
-  /// X position of this component on the screen (relative to the anchor).
-  double get x => _position.x;
-  set x(double x) => _position.x = x;
+  final Transform2D transform;
+  final NotifyingVector2 _size;
+  Anchor _anchor;
 
-  /// Y position of this component on the screen (relative to the anchor).
-  double get y => _position.y;
-  set y(double y) => _position.y = y;
+  /// The total transformation matrix for the component. This matrix combines
+  /// translation, rotation and scale transforms into a single entity. The
+  /// matrix is cached and gets recalculated only as necessary.
+  Matrix4 get transformMatrix => transform.transformMatrix;
 
-  /// The size that this component is rendered with.
-  /// This is not necessarily the source size of the asset.
-  final Vector2 _size;
-  Vector2 get size => _size;
+  /// The position of this component's anchor on the screen.
+  NotifyingVector2 get position => transform.position;
+  set position(Vector2 position) => transform.position = position;
+
+  /// X position of this component's anchor on the screen.
+  double get x => transform.x;
+  set x(double x) => transform.x = x;
+
+  /// Y position of this component's anchor on the screen.
+  double get y => transform.y;
+  set y(double y) => transform.y = y;
+
+  /// Rotation angle (in radians) of the component. The component will be
+  /// rotated around its anchor point in the clockwise direction if the
+  /// angle is positive, or counterclockwise if the angle is negative.
+  double get angle => transform.angle;
+  set angle(double a) => transform.angle = a;
+
+  /// The scale factor of this component. The scale can be different along
+  /// the X and Y dimensions. A scale greater than 1 makes the component
+  /// bigger, and less than 1 smaller. The scale can also be negative,
+  /// which results in a mirror reflection along the corresponding axis.
+  NotifyingVector2 get scale => transform.scale;
+  set scale(Vector2 scale) => transform.scale = scale;
+
+  /// Anchor point for this component. An anchor point describes a point
+  /// within the rectangle of size [size]. This point is considered to
+  /// be the logical "center" of the component. This can be visualized
+  /// as the point where Flame "grabs" the component. All transforms
+  /// occur around this point: the [position] is where the anchor point
+  /// will end up after the component is translated; the rotation and
+  /// scaling also happen around this anchor point.
+  ///
+  /// The [anchor] of a component can be modified during runtime. When
+  /// this happens, the [position] of the component will remain unchanged,
+  /// which means that visually the component will shift on the screen
+  /// so that its new anchor will be at the same screen coordinates as
+  /// the old anchor was.
+  Anchor get anchor => _anchor;
+  set anchor(Anchor anchor) {
+    _anchor = anchor;
+    _onModifiedSizeOrAnchor();
+  }
+
+  /// The logical size of the component. The game assumes that this is the
+  /// approximate size of the object that will be drawn on the screen.
+  /// This size will therefore be used for collision detection and tap
+  /// handling.
+  ///
+  /// This property can be reassigned at runtime, although this is not
+  /// recommended. Instead, in order to make the [PositionComponent] larger
+  /// or smaller, change its [scale].
+  NotifyingVector2 get size => _size;
   set size(Vector2 size) => _size.setFrom(size);
 
-  /// Width (size) that this component is rendered with.
-  double get width => size.x;
-  set width(double width) => size.x = width;
+  /// The width of the component in local coordinates. Note that the object
+  /// may visually appear larger or smaller due to application of [scale].
+  double get width => _size.x;
+  set width(double w) => _size.x = w;
 
-  /// Height (size) that this component is rendered with.
-  double get height => size.y;
-  set height(double height) => size.y = height;
+  /// The height of the component in local coordinates. Note that the object
+  /// may visually appear larger or smaller due to application of [scale].
+  double get height => _size.y;
+  set height(double h) => _size.y = h;
 
-  /// Get the absolute position, with the anchor taken into consideration
-  Vector2 get absolutePosition => absoluteParentPosition + position;
+  /// The "physical" size of the component. This is the size of the
+  /// component as seen from the parent's perspective, and it is equal to
+  /// [size] * [scale]. This is a computed property and cannot be
+  /// modified by the user.
+  Vector2 get scaledSize =>
+      Vector2(width * scale.x.abs(), height * scale.y.abs());
 
-  /// Get the relative top left position regardless of the anchor and angle
-  Vector2 get topLeftPosition {
-    return anchor.toOtherAnchorPosition(
-      position,
-      Anchor.topLeft,
-      size,
-    );
+  /// Measure the distance (in parent's coordinate space) between this
+  /// component's anchor and the [other] component's anchor.
+  double distance(PositionComponent other) =>
+      position.distanceTo(other.position);
+
+  //#region Coordinate transformations
+
+  /// Test whether the `point` (given in global coordinates) lies within this
+  /// component. The top and the left borders of the component are inclusive,
+  /// while the bottom and the right borders are exclusive.
+  @override
+  bool containsPoint(Vector2 point) {
+    final local = absoluteToLocal(point);
+    return (local.x >= 0) &&
+        (local.y >= 0) &&
+        (local.x < _size.x) &&
+        (local.y < _size.y);
   }
 
-  /// Set the top left position regardless of the anchor
-  set topLeftPosition(Vector2 position) {
-    this.position = position + (anchor.toVector2()..multiply(size));
+  /// Convert local coordinates of a point [point] inside the component
+  /// into the parent's coordinate space.
+  Vector2 positionOf(Vector2 point) {
+    return transform.localToGlobal(point);
   }
+
+  /// Similar to [positionOf()], but applies to any anchor point within
+  /// the component.
+  Vector2 positionOfAnchor(Anchor anchor) {
+    if (anchor == _anchor) {
+      return position;
+    }
+    return positionOf(Vector2(anchor.x * size.x, anchor.y * size.y));
+  }
+
+  /// Convert local coordinates of a point [point] inside the component
+  /// into the global (world) coordinate space.
+  Vector2 absolutePositionOf(Vector2 point) {
+    var parentPoint = positionOf(point);
+    var ancestor = parent;
+    while (ancestor != null) {
+      if (ancestor is PositionComponent) {
+        parentPoint = ancestor.positionOf(parentPoint);
+      }
+      ancestor = ancestor.parent;
+    }
+    return parentPoint;
+  }
+
+  /// Similar to [absolutePositionOf()], but applies to any anchor
+  /// point within the component.
+  Vector2 absolutePositionOfAnchor(Anchor anchor) =>
+      absolutePositionOf(Vector2(anchor.x * size.x, anchor.y * size.y));
+
+  /// Transform [point] from the parent's coordinate space into the local
+  /// coordinates. This function is the inverse of [positionOf()].
+  Vector2 toLocal(Vector2 point) => transform.globalToLocal(point);
+
+  /// Transform [point] from the global (world) coordinate space into the
+  /// local coordinates. This function is the inverse of
+  /// [absolutePositionOf()].
+  ///
+  /// This can be used, for example, to detect whether a specific point
+  /// on the screen lies within this [PositionComponent], and where
+  /// exactly it hits.
+  Vector2 absoluteToLocal(Vector2 point) {
+    var c = parent;
+    while (c != null) {
+      if (c is PositionComponent) {
+        return toLocal(c.absoluteToLocal(point));
+      }
+      c = c.parent;
+    }
+    return toLocal(point);
+  }
+
+  /// The top-left corner's position in the parent's coordinates.
+  Vector2 get topLeftPosition => positionOfAnchor(Anchor.topLeft);
+  set topLeftPosition(Vector2 point) {
+    position += point - topLeftPosition;
+  }
+
+  /// The position of the center of the component's bounding rectangle
+  /// in the parent's coordinates.
+  Vector2 get center => positionOfAnchor(Anchor.center);
+  set center(Vector2 point) {
+    position += point - center;
+  }
+
+  /// The [anchor]'s position in absolute (world) coordinates.
+  Vector2 get absolutePosition => absolutePositionOfAnchor(_anchor);
 
   /// Get the absolute top left position regardless of whether it is a child or not
-  Vector2 get absoluteTopLeftPosition {
-    final p = parent;
-    if (p is PositionComponent) {
-      return p.absoluteTopLeftPosition + topLeftPosition;
-    } else {
-      return topLeftPosition;
+  Vector2 get absoluteTopLeftPosition =>
+      absolutePositionOfAnchor(Anchor.topLeft);
+
+  /// Get the absolute center of the component
+  Vector2 get absoluteCenter => absolutePositionOfAnchor(Anchor.center);
+
+  //#endregion
+
+  //#region Mutators
+
+  /// Flip the component horizontally around its anchor point.
+  void flipHorizontally() => transform.flipHorizontally();
+
+  /// Flip the component vertically around its anchor point.
+  void flipVertically() => transform.flipVertically();
+
+  /// Flip the component horizontally around its center line.
+  void flipHorizontallyAroundCenter() {
+    final delta = (1 - 2 * _anchor.x) * width;
+    transform.x += delta * math.cos(transform.angle);
+    transform.y += delta * math.sin(transform.angle);
+    transform.flipHorizontally();
+  }
+
+  /// Flip the component vertically around its center line.
+  void flipVerticallyAroundCenter() {
+    final delta = (1 - 2 * _anchor.y) * height;
+    transform.x += -delta * math.sin(transform.angle);
+    transform.y += delta * math.cos(transform.angle);
+    transform.flipVertically();
+  }
+
+  //#endregion
+
+  /// Internal handler that must be invoked whenever either the [size]
+  /// or the [anchor] change.
+  void _onModifiedSizeOrAnchor() {
+    transform.offset = Vector2(-_anchor.x * _size.x, -_anchor.y * _size.y);
+  }
+
+  @override
+  void renderDebugMode(Canvas canvas) {
+    super.renderDebugMode(canvas);
+    final precision = debugCoordinatesPrecision;
+    canvas.drawRect(size.toRect(), debugPaint);
+    // draw small cross at the anchor point
+    final p0 = -transform.offset;
+    canvas.drawLine(Offset(p0.x, p0.y - 2), Offset(p0.x, p0.y + 2), debugPaint);
+    canvas.drawLine(Offset(p0.x - 2, p0.y), Offset(p0.x + 2, p0.y), debugPaint);
+    if (precision != null) {
+      // print coordinates at the top-left corner
+      final p1 = absolutePositionOfAnchor(Anchor.topLeft);
+      final x1str = p1.x.toStringAsFixed(precision);
+      final y1str = p1.y.toStringAsFixed(precision);
+      debugTextPaint.render(
+        canvas,
+        'x:$x1str y:$y1str',
+        Vector2(-10 * (precision + 3), -15),
+      );
+      // print coordinates at the bottom-right corner
+      final p2 = absolutePositionOfAnchor(Anchor.bottomRight);
+      final x2str = p2.x.toStringAsFixed(precision);
+      final y2str = p2.y.toStringAsFixed(precision);
+      debugTextPaint.render(
+        canvas,
+        'x:$x2str y:$y2str',
+        Vector2(size.x - 10 * (precision + 3), size.y),
+      );
     }
   }
 
-  /// Get the position that everything in this component is positioned in relation to
-  /// If this component has no parent the absolute parent position is the origin,
-  /// otherwise it's the parents absolute top left position
-  Vector2 get absoluteParentPosition {
-    final p = parent;
-    if (p is PositionComponent) {
-      return p.absoluteTopLeftPosition;
+  @mustCallSuper
+  @override
+  void preRender(Canvas canvas) {
+    canvas.save();
+    canvas.transform(transformMatrix.storage);
+  }
+
+  @mustCallSuper
+  @override
+  void postRender(Canvas canvas) {
+    canvas.restore();
+  }
+
+  /// Returns the bounding rectangle for this component.
+  ///
+  /// The bounding rectangle is given in parent's coordinate space, and is
+  /// defined as the smallest axes-aligned rectangle that can fit this
+  /// component. The aspect ratio of the bounding rectangle may be different
+  /// from [size] if the component was scaled and/or rotated.
+  Rect toRect() => _toRectImpl(positionOfAnchor);
+
+  /// The bounding rectangle of the component in global coordinate space.
+  ///
+  /// This is similar to [toRect()], except the rectangle is projected into the
+  /// outermost coordinate frame.
+  Rect toAbsoluteRect() => _toRectImpl(absolutePositionOfAnchor);
+
+  Rect _toRectImpl(Vector2 Function(Anchor point) projector) {
+    final topLeft = projector(Anchor.topLeft);
+    final bottomRight = projector(Anchor.bottomRight);
+    if (angle == 0) {
+      return Rect.fromPoints(topLeft.toOffset(), bottomRight.toOffset());
     } else {
-      return Vector2.zero();
+      final topRight = projector(Anchor.topRight);
+      final bottomLeft = projector(Anchor.bottomLeft);
+      final xs = [topLeft.x, topRight.x, bottomLeft.x, bottomRight.x]..sort();
+      final ys = [topLeft.y, topRight.y, bottomLeft.y, bottomRight.y]..sort();
+      return Rect.fromLTRB(xs.first, ys.first, xs.last, ys.last);
     }
   }
-
-  /// Get the position of the center of the component's bounding rectangle without rotation
-  Vector2 get center {
-    return anchor == Anchor.center
-        ? position
-        : anchor.toOtherAnchorPosition(position, Anchor.center, size);
-  }
-
-  /// Get the absolute center of the component without rotation
-  Vector2 get absoluteCenter => absoluteParentPosition + center;
-
-  /// Angle (with respect to the x-axis) this component should be rendered with.
-  /// It is rotated around its anchor.
-  double angle;
-
-  /// Anchor point for this component. This is where flame "grabs it".
-  /// The [position] is relative to this point inside the component.
-  /// The [angle] is rotated around this point.
-  Anchor anchor;
-
-  /// Whether this component should be flipped on the X axis before being rendered.
-  bool renderFlipX = false;
-
-  /// Whether this component should be flipped ofn the Y axis before being rendered.
-  bool renderFlipY = false;
-
-  /// Returns the relative position/size of this component.
-  /// Relative because it might be translated by their parents (which is not considered here).
-  Rect toRect() => topLeftPosition.toPositionedRect(size);
-
-  /// Returns the absolute position/size of this component.
-  /// Absolute because it takes any possible parent position into consideration.
-  Rect toAbsoluteRect() => absoluteTopLeftPosition.toPositionedRect(size);
 
   /// Mutates position and size using the provided [rect] as basis.
   /// This is a relative rect, same definition that [toRect] use
@@ -127,64 +376,5 @@ abstract class PositionComponent extends BaseComponent {
   void setByRect(Rect rect) {
     size.setValues(rect.width, rect.height);
     topLeftPosition = rect.topLeft.toVector2();
-  }
-
-  PositionComponent({
-    Vector2? position,
-    Vector2? size,
-    this.angle = 0.0,
-    this.anchor = Anchor.topLeft,
-    this.renderFlipX = false,
-    this.renderFlipY = false,
-  })  : _position = position ?? Vector2.zero(),
-        _size = size ?? Vector2.zero();
-
-  @override
-  bool containsPoint(Vector2 point) {
-    final rectangle = Rectangle.fromRect(toAbsoluteRect(), angle: angle)
-      ..anchorPosition = absolutePosition;
-    return rectangle.containsPoint(point);
-  }
-
-  double angleTo(PositionComponent c) => position.angleTo(c.position);
-
-  double distance(PositionComponent c) => position.distanceTo(c.position);
-
-  @override
-  void renderDebugMode(Canvas canvas) {
-    if (this is Hitbox) {
-      (this as Hitbox).renderShapes(canvas);
-    }
-    canvas.drawRect(size.toRect(), debugPaint);
-    debugTextConfig.render(
-      canvas,
-      'x: ${x.toStringAsFixed(2)} y:${y.toStringAsFixed(2)}',
-      Vector2(-50, -15),
-    );
-
-    final rect = toRect();
-    final dx = rect.right;
-    final dy = rect.bottom;
-    debugTextConfig.render(
-      canvas,
-      'x:${dx.toStringAsFixed(2)} y:${dy.toStringAsFixed(2)}',
-      Vector2(width - 50, height),
-    );
-  }
-
-  @override
-  void prepareCanvas(Canvas canvas) {
-    canvas.translate(x, y);
-    canvas.rotate(angle);
-    final delta = -anchor.toVector2()
-      ..multiply(size);
-    canvas.translate(delta.x, delta.y);
-
-    // Handle inverted rendering by moving center and flipping.
-    if (renderFlipX || renderFlipY) {
-      canvas.translate(width / 2, height / 2);
-      canvas.scale(renderFlipX ? -1.0 : 1.0, renderFlipY ? -1.0 : 1.0);
-      canvas.translate(-width / 2, -height / 2);
-    }
   }
 }

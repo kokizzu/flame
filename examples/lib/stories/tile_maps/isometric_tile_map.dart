@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
-import 'package:flame/gestures.dart';
+import 'package:flame/input.dart';
 import 'package:flame/sprite.dart';
 import 'package:flutter/material.dart' hide Image;
 
@@ -41,7 +41,7 @@ class Selector extends SpriteComponent {
   }
 }
 
-class IsometricTileMapGame extends BaseGame with MouseMovementDetector {
+class IsometricTileMapGame extends FlameGame with MouseMovementDetector {
   late IsometricTileMapComponent base;
   late Selector selector;
 
@@ -49,6 +49,7 @@ class IsometricTileMapGame extends BaseGame with MouseMovementDetector {
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     final tilesetImage = await images.load('tile_maps/tiles$suffix.png');
     final tileset = SpriteSheet(
       image: tilesetImage,
@@ -89,8 +90,8 @@ class IsometricTileMapGame extends BaseGame with MouseMovementDetector {
   }
 
   @override
-  void onMouseMove(PointerHoverInfo event) {
-    final screenPosition = event.eventPosition.game;
+  void onMouseMove(PointerHoverInfo info) {
+    final screenPosition = info.eventPosition.game;
     final block = base.getBlock(screenPosition);
     selector.show = base.containsBlock(block);
     selector.position.setFrom(topLeft + base.getBlockPosition(block));

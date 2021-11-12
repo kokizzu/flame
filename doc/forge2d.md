@@ -4,21 +4,28 @@ We (the Flame organization) maintain a ported version of the Box2D physics engin
 is called Forge2D.
 
 If you want to use Forge2D specifically for Flame you should use our bridge library
-[flame_forge2d](https://github.com/flame-engine/flame_forge2d) and if you just want to use it
-in a Dart project you can use the [forge2d](https://github.com/flame-engine/forge2d) library
-directly.
+[flame_forge2d](https://github.com/flame-engine/flame/tree/main/packages/flame_forge2d) and if you
+just want to use it in a Dart project you can use the
+[forge2d](https://github.com/flame-engine/forge2d) library directly.
 
 To use it in your game you just need to add `flame_forge2d` to your pubspec.yaml, as can be seen
-in the [Forge2D example](https://github.com/flame-engine/flame_forge2d/tree/main/example) and in the
-pub.dev [installation instructions](https://pub.dev/packages/flame_forge2d).
+in the
+[Forge2D example](https://github.com/flame-engine/flame/tree/main/packages/flame_forge2d/example)
+and in the pub.dev [installation instructions](https://pub.dev/packages/flame_forge2d).
 
-## Forge2DGame (BaseGame extension)
+## Forge2DGame (FlameGame extension)
 
 If you are going to use Forge2D in your project it can be a good idea to use the Forge2D specific
-extension of the `BaseGame` class.
+extension of the `FlameGame` class.
 
 It is called `Forge2DGame` and it will control the adding and removal of Forge2D's `BodyComponents`
 as well as your normal components.
+
+In `Forge2DGame` the `Camera` has a zoom level set to 10 by default, so your components will be a
+lot bigger than in a normal Flame game. This is due to the speed limitation in the `Forge2D` world,
+which you would hit very quickly if you are using it with `zoom = 1.0`. You can easily change the
+zoom level eiter by calling `super(zoom: yourZoom)` in your constructor, or do
+`game.camera.zoom = yourZoom;` at a later stage.
 
 If you are previously familiar with Box2D it can be good to know that the whole concept of the
 Box2d world is mapped to `world` in the `Forge2DGame` component and every `Body` should be a
@@ -29,12 +36,17 @@ component list along with your physical entities. When the update is called, it 
 physics engine to properly update every child.
 
 A simple `Forge2DGame` implementation examples can be seen in the
-[examples folder](https://github.com/flame-engine/flame_box2d/blob/main/examples/).
+[examples folder](https://github.com/flame-engine/flame/tree/main/packages/flame_forge2d/example).
 
 ## BodyComponent
 
 If you don't need to have a sprite on top of your body you should use the plain `BodyComponent`, for
 example if you want a circle, rectangle or polygon but only painted with a Flutter `Paint`.
+
+The `BodyComponent` is by default having `debugMode = true`, since otherwise it wouldn't show
+anything after you have created a `Body` and added the `BodyComponent` to the game. If you want to
+turn it off you can either override `debugMode` to set it to false or assign false to it in your
+component constructor.
 
 ## SpriteBodyComponent
 
@@ -107,7 +119,7 @@ An implementation example can be seen in the
 ## Viewport and Camera
 
 `Forge2DGame` is using an implementation of the normal Flame `Viewport` and `Camera`, which can be
-read more about [here](//TODO: Link to viewport and camera docs).
+read more about [here](camera_and_viewport.md).
 
 If you see your screen as a window and the outside as the Forge2D world, then the `Viewport` is the
 part of the world outside that you can see through the window, so the parts that you can see on

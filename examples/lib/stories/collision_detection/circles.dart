@@ -4,11 +4,17 @@ import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
 import 'package:flame/game.dart';
 import 'package:flame/geometry.dart';
-import 'package:flame/gestures.dart';
+import 'package:flame/input.dart';
 import 'package:flutter/material.dart' hide Image, Draggable;
 
+const circlesInfo = '''
+This example will create a circle every time you tap on the screen. It will have
+the initial velocity towards the center of the screen and if it touches another
+circle both of them will change color.
+''';
+
 class MyCollidable extends PositionComponent
-    with HasGameRef<Circles>, Hitbox, Collidable {
+    with HasGameRef<Circles>, HasHitboxes, Collidable {
   late Vector2 velocity;
   final _collisionColor = Colors.amber;
   final _defaultColor = Colors.cyan;
@@ -21,11 +27,12 @@ class MyCollidable extends PositionComponent
           size: Vector2.all(100),
           anchor: Anchor.center,
         ) {
-    addShape(HitboxCircle());
+    addHitbox(HitboxCircle());
   }
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     final center = gameRef.size / 2;
     velocity = (center - position)..scaleTo(150);
   }
@@ -34,7 +41,7 @@ class MyCollidable extends PositionComponent
   void update(double dt) {
     super.update(dt);
     if (_isWallHit) {
-      remove();
+      removeFromParent();
       return;
     }
     debugColor = _isCollision ? _collisionColor : _defaultColor;
@@ -44,8 +51,7 @@ class MyCollidable extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
-    renderShapes(canvas);
+    renderHitboxes(canvas);
   }
 
   @override
@@ -58,14 +64,15 @@ class MyCollidable extends PositionComponent
   }
 }
 
-class Circles extends BaseGame with HasCollidables, TapDetector {
+class Circles extends FlameGame with HasCollidables, TapDetector {
   @override
   Future<void> onLoad() async {
+    super.onLoad();
     add(ScreenCollidable());
   }
 
   @override
-  void onTapDown(TapDownInfo event) {
-    add(MyCollidable(event.eventPosition.game));
+  void onTapDown(TapDownInfo info) {
+    add(MyCollidable(info.eventPosition.game));
   }
 }

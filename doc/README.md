@@ -13,7 +13,7 @@ short).
 
 We also provide stand-alone packages that extend the Flame functionality:
 - [flame_audio](https://pub.dev/packages/flame_audio) Which provides audio capabilities using the
- `audioplayers` package.
+  `audioplayers` package.
 - [flame_forge2d](https://pub.dev/packages/flame_forge2d) Which provides physics capabilities using
   our own `Box2D` port called `Forge2D`.
 - [flame_tiled](https://pub.dev/packages/flame_tiled) Which provides integration with the
@@ -53,3 +53,35 @@ You can also check out the
 [awesome flame repository](https://github.com/flame-engine/awesome-flame#articles--tutorials),
 It contains quite a lot of good tutorials and articles written by the community to get you started
 with Flame.
+
+
+## Outside of the scope of the engine
+
+Games sometimes require complex feature sets depending on what the game is all about. And some of
+those feature sets are outside of the scope of the Flame Engine ecosystem, in this section you can find
+them, and also some recommendations of packages/services that can be used:
+
+### Multiplayer (netcode)
+
+Flame doesn't bundle any network feature, which may be needed to write online multiplayer games.
+
+If you are building a multipler game, here are some recommendations of packages/services:
+
+ - [Nakama](https://github.com/Allan-Nava/nakama-flutter): Nakama is an open-source server designed
+ to power modern games and apps.
+ - [Firebase](https://firebase.google.com/): Provides dozens of services that can be used to write
+simpler multiplayer experiences.
+
+### External assets
+
+Flame doesn't bundle any helpers to load assets from an external source (external storage or online
+sources).
+
+But most of Flame's API can be loaded from concrete asset instances, for examples, `Sprite`s can be
+created from `dart:ui`s `Image` instaces, so the user can write custom code to load images from
+anywhere they need, and then load it into Flame's classes.
+
+Here are some suggestions for http client packages:
+
+ - [http](https://pub.dev/packages/http): A simple pacakage for perfoming http requests.
+ - [Dio](https://pub.dev/packages/dio): A popular and powerful package for perfoming http requests.

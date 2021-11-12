@@ -3,13 +3,13 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart' hide Timer;
-import 'package:flame/timer.dart' as flame_timer;
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/sprite.dart';
+import 'package:flame/timer.dart' as flame_timer;
 import 'package:flutter/material.dart' hide Image;
 
-class ParticlesGame extends BaseGame {
+class ParticlesGame extends FlameGame with FPSCounter {
   /// Defines dimensions of the sample
   /// grid to be displayed on the screen,
   /// 5x5 in this particular case
@@ -19,10 +19,13 @@ class ParticlesGame extends BaseGame {
   /// Miscellaneous values used
   /// by examples below
   final Random rnd = Random();
+  Timer? spawnTimer;
   final StepTween steppedTween = StepTween(begin: 0, end: 5);
   final trafficLight = TrafficLightComponent();
-  final TextConfig fpsTextConfig = TextConfig(
-    color: const Color(0xFFFFFFFF),
+  final TextPaint fpsTextPaint = TextPaint(
+    config: const TextPaintConfig(
+      color: Color(0xFFFFFFFF),
+    ),
   );
 
   /// Defines the lifespan of all the particles in these examples
@@ -33,11 +36,24 @@ class ParticlesGame extends BaseGame {
 
   @override
   Future<void> onLoad() async {
+    await super.onLoad();
     await images.load('zap.png');
     await images.load('boom.png');
+  }
 
+  @override
+  void onMount() {
+    spawnParticles();
     // Spawn new particles every second
-    Timer.periodic(sceneDuration, (_) => spawnParticles());
+    spawnTimer = Timer.periodic(sceneDuration, (_) {
+      spawnParticles();
+    });
+  }
+
+  @override
+  void onRemove() {
+    super.onRemove();
+    spawnTimer?.cancel();
   }
 
   /// Showcases various different uses of [Particle]
@@ -79,12 +95,14 @@ class ParticlesGame extends BaseGame {
 
       add(
         // Bind all the particles to a [Component] update
-        // lifecycle from the [BaseGame].
-        TranslatedParticle(
-          lifespan: 1,
-          offset: cellCenter.toOffset(),
-          child: particle,
-        ).asComponent(),
+        // lifecycle from the [FlameGame].
+        ParticleComponent(
+          TranslatedParticle(
+            lifespan: 1,
+            offset: cellCenter,
+            child: particle,
+          ),
+        ),
       );
     } while (particles.isNotEmpty);
   }
@@ -110,10 +128,9 @@ class ParticlesGame extends BaseGame {
   /// one predefined position to another one
   Particle movingParticle() {
     return MovingParticle(
-      // This parameter is optional, will
-      // default to [Offset.zero]
-      from: const Offset(-20, -20),
-      to: const Offset(20, 20),
+      /// This parameter is optional, will default to [Vector2.zero]
+      from: Vector2(-20, -20),
+      to: Vector2(20, 20),
       child: CircleParticle(paint: Paint()..color = Colors.amber),
     );
   }
@@ -122,7 +139,7 @@ class ParticlesGame extends BaseGame {
   /// within each cell each time created
   Particle randomMovingParticle() {
     return MovingParticle(
-      to: randomCellOffset(),
+      to: randomCellVector2(),
       child: CircleParticle(
         radius: 5 + rnd.nextDouble() * 5,
         paint: Paint()..color = Colors.red,
@@ -138,8 +155,8 @@ class ParticlesGame extends BaseGame {
       generator: (i) {
         final currentColumn = (cellSize.x / 5) * i - halfCellSize.x;
         return MovingParticle(
-          from: Offset(currentColumn, -halfCellSize.y),
-          to: Offset(currentColumn, halfCellSize.y),
+          from: Vector2(currentColumn, -halfCellSize.y),
+          to: Vector2(currentColumn, halfCellSize.y),
           child: CircleParticle(
             radius: 2.0,
             paint: Paint()..color = Colors.blue,
@@ -155,7 +172,7 @@ class ParticlesGame extends BaseGame {
     return Particle.generate(
       count: 5,
       generator: (i) => MovingParticle(
-        to: randomCellOffset() * .5,
+        to: randomCellVector2()..scale(.5),
         child: CircleParticle(
           radius: 5 + rnd.nextDouble() * 5,
           paint: Paint()..color = Colors.deepOrange,
@@ -171,7 +188,7 @@ class ParticlesGame extends BaseGame {
       count: 5,
       generator: (i) => MovingParticle(
         curve: Curves.easeOutQuad,
-        to: randomCellOffset() * .5,
+        to: randomCellVector2()..scale(.5),
         child: CircleParticle(
           radius: 5 + rnd.nextDouble() * 5,
           paint: Paint()..color = Colors.deepPurple,
@@ -190,7 +207,7 @@ class ParticlesGame extends BaseGame {
       count: 5,
       generator: (i) => MovingParticle(
         curve: const Interval(.2, .6, curve: Curves.easeInOutCubic),
-        to: randomCellOffset() * .5,
+        to: randomCellVector2()..scale(.5),
         child: CircleParticle(
           radius: 5 + rnd.nextDouble() * 5,
           paint: Paint()..color = Colors.greenAccent,
@@ -256,7 +273,7 @@ class ParticlesGame extends BaseGame {
     return Particle.generate(
       generator: (i) => MovingParticle(
         curve: Interval(rnd.nextDouble() * .1, rnd.nextDouble() * .8 + .1),
-        to: randomCellOffset() * .5,
+        to: randomCellVector2()..scale(.5),
         child: reusablePatricle!,
       ),
     );
@@ -290,7 +307,7 @@ class ParticlesGame extends BaseGame {
     return Particle.generate(
       count: count,
       generator: (i) => TranslatedParticle(
-        offset: Offset(
+        offset: Vector2(
           (i % perLine) * colWidth - halfCellSize.x + imageSize,
           (i ~/ perLine) * rowHeight - halfCellSize.y + imageSize,
         ),
@@ -314,8 +331,8 @@ class ParticlesGame extends BaseGame {
     return Particle.generate(
       generator: (i) => AcceleratedParticle(
         speed:
-            Offset(rnd.nextDouble() * 600 - 300, -rnd.nextDouble() * 600) * .2,
-        acceleration: const Offset(0, 200),
+            Vector2(rnd.nextDouble() * 600 - 300, -rnd.nextDouble() * 600) * .2,
+        acceleration: Vector2(0, 200),
         child: rotatingImage(initialAngle: rnd.nextDouble() * pi),
       ),
     );
@@ -332,9 +349,9 @@ class ParticlesGame extends BaseGame {
       const Color(0xff0000ff),
     ];
     final positions = [
-      const Offset(-10, 10),
-      const Offset(10, 10),
-      const Offset(0, -14),
+      Vector2(-10, 10),
+      Vector2(10, 10),
+      Vector2(0, -14),
     ];
 
     return Particle.generate(
@@ -378,8 +395,8 @@ class ParticlesGame extends BaseGame {
   /// which is independent from the parent [Particle].
   Particle componentParticle() {
     return MovingParticle(
-      from: (-halfCellSize * .2).toOffset(),
-      to: (halfCellSize * .2).toOffset(),
+      from: -halfCellSize * .2,
+      to: halfCellSize * .2,
       curve: SineCurve(),
       child: ComponentParticle(component: trafficLight),
     );
@@ -404,28 +421,30 @@ class ParticlesGame extends BaseGame {
 
     return Particle.generate(
       generator: (i) {
-        final initialSpeed = randomCellOffset();
+        final initialSpeed = randomCellVector2();
         final deceleration = initialSpeed * -1;
-        const gravity = Offset(0, 40);
+        final gravity = Vector2(0, 40);
 
         return AcceleratedParticle(
           speed: initialSpeed,
           acceleration: deceleration + gravity,
-          child: ComputedParticle(renderer: (canvas, particle) {
-            final paint = randomElement(paints);
-            // Override the color to dynamically update opacity
-            paint.color = paint.color.withOpacity(1 - particle.progress);
+          child: ComputedParticle(
+            renderer: (canvas, particle) {
+              final paint = randomElement(paints);
+              // Override the color to dynamically update opacity
+              paint.color = paint.color.withOpacity(1 - particle.progress);
 
-            canvas.drawCircle(
-              Offset.zero,
-              // Closer to the end of lifespan particles
-              // will turn into larger glaring circles
-              rnd.nextDouble() * particle.progress > .6
-                  ? rnd.nextDouble() * (50 * particle.progress)
-                  : 2 + (3 * particle.progress),
-              paint,
-            );
-          }),
+              canvas.drawCircle(
+                Offset.zero,
+                // Closer to the end of lifespan particles
+                // will turn into larger glaring circles
+                rnd.nextDouble() * particle.progress > .6
+                    ? rnd.nextDouble() * (50 * particle.progress)
+                    : 2 + (3 * particle.progress),
+                paint,
+              );
+            },
+          ),
         );
       },
     );
@@ -445,23 +464,20 @@ class ParticlesGame extends BaseGame {
       ),
     );
 
-    final cellSizeOffset = cellSize.toOffset();
-    final halfCellSizeOffset = halfCellSize.toOffset();
-
     return ComposedParticle(
       children: [
         rect
             .rotating(to: pi / 2)
-            .moving(to: -cellSizeOffset)
+            .moving(to: -cellSize)
             .scaled(2)
-            .accelerated(acceleration: halfCellSizeOffset * 5)
-            .translated(halfCellSizeOffset),
+            .accelerated(acceleration: halfCellSize * 5)
+            .translated(halfCellSize),
         rect
             .rotating(to: -pi)
-            .moving(to: cellSizeOffset.scale(1, -1))
+            .moving(to: Vector2(1, -1)..multiply(cellSize))
             .scaled(2)
-            .translated(halfCellSizeOffset.scale(-1, 1))
-            .accelerated(acceleration: halfCellSizeOffset.scale(-5, 5)),
+            .translated(Vector2(1, -1)..multiply(halfCellSize))
+            .accelerated(acceleration: Vector2(-5, 5)..multiply(halfCellSize)),
       ],
     );
   }
@@ -474,7 +490,7 @@ class ParticlesGame extends BaseGame {
     super.render(canvas);
 
     if (debugMode) {
-      fpsTextConfig.render(
+      fpsTextPaint.render(
         canvas,
         '${fps(120).toStringAsFixed(2)}fps',
         Vector2(0, size.y - 24),
@@ -482,13 +498,9 @@ class ParticlesGame extends BaseGame {
     }
   }
 
-  /// Returns random [Offset] within a virtual
-  /// grid cell
-  Offset randomCellOffset() {
-    return Offset(
-      cellSize.x * rnd.nextDouble() - halfCellSize.x,
-      cellSize.y * rnd.nextDouble() - halfCellSize.y,
-    );
+  /// Returns random [Vector2] within a virtual grid cell
+  Vector2 randomCellVector2() {
+    return (Vector2.random() - Vector2.random())..multiply(cellSize);
   }
 
   /// Returns random [Color] from primary swatches
@@ -518,7 +530,7 @@ class ParticlesGame extends BaseGame {
   }
 }
 
-Future<BaseGame> loadGame() async {
+Future<FlameGame> loadGame() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   return ParticlesGame();
@@ -544,7 +556,8 @@ class TrafficLightComponent extends Component {
     Colors.red,
   ];
 
-  TrafficLightComponent() {
+  @override
+  void onMount() {
     colorChangeTimer.start();
   }
 
